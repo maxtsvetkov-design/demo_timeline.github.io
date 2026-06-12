@@ -618,7 +618,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--mint);outl
             <span class="layer-drag-handle" data-tip="Drag to reorder"><svg class="icon sm"><use href="#i-grab"/></svg></span>
             <button class="eye-t" data-tip="Collapse row"><svg class="icon xs"><use href="#i-chev-down"/></svg></button>
             <span class="sw base"></span>
-            <span class="lname" style="display:block">Basemap | Google Maps<small id="basemapDate">14 May 2025 ‹</small></span>
+            <span class="lname" style="display:block">Basemap<small id="basemapDate">14 May 2025 ‹</small></span>
             <button class="eye-t on" id="eyeBase" data-tip="Toggle visibility"><svg class="icon sm"><use id="eyeBaseUse" href="#i-eye"/></svg></button>
             <button class="dots-t" data-tip="Layer options"><svg class="icon sm"><use href="#i-more"/></svg></button>
           </div>
@@ -1201,10 +1201,6 @@ $$('.layer-row .eye-t:not(#eyeNdvi):not(#eyeBase)').forEach(b=>b.addEventListene
 
   labels.querySelectorAll('.layer-row').forEach(row=>{
     row.addEventListener('dragstart',e=>{
-      // only start drag from the handle
-      if(!e.target.closest('.layer-drag-handle')){
-        e.preventDefault();return;
-      }
       dragSrc=row;
       row.classList.add('dragging');
       e.dataTransfer.effectAllowed='move';
