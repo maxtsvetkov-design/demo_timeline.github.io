@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nabat — Story · GIS prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+/* ============ tokens ============ */
+:root{
+  --bg:#0a100e;
+  --panel:rgba(13,20,17,.88);
+  --panel-2:rgba(17,25,21,.92);
+  --card:rgba(255,255,255,.035);
+  --card-2:rgba(255,255,255,.055);
+  --stroke:rgba(255,255,255,.08);
+  --stroke-2:rgba(255,255,255,.14);
+  --text:#edf4ef;
+  --text-2:#a9b8b0;
+  --text-3:#6f7f77;
+  --mint:#3ce8a6;
+  --mint-soft:rgba(60,232,166,.14);
+  --green-btn:#2f9e74;
+  --green-btn-hi:#37b384;
+  --chip:#161f1b;
+  --danger:#ff5d5d;
+  --r-lg:16px; --r-md:12px; --r-sm:9px;
+  --font-ui:"Inter Tight",-apple-system,"Segoe UI",sans-serif;
+  --font-display:"Poppins","Inter Tight",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --shadow:0 18px 50px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--font-ui); font-size:13.5px; line-height:1.45;
+  overflow:hidden; min-width:1180px;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-radius:6px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ app frame ============ */
+.app{display:flex;height:100vh}
+
+/* ---- left rail ---- */
+.rail{
+  width:58px;flex:0 0 58px;background:#0b110f;border-right:1px solid rgba(255,255,255,.05);
+  display:flex;flex-direction:column;align-items:center;padding:10px 0 12px;gap:8px;z-index:60;
+}
+.logo{width:32px;height:32px;border-radius:9px;background:#14241d;color:var(--mint);
+  display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:17px;margin-bottom:6px}
+.rail-btn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--text-3);
+  transition:.18s background,.18s color;position:relative}
+.rail-btn:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.rail-btn.active{background:var(--mint);color:#06231a}
+.rail-sep{width:26px;height:1px;background:rgba(255,255,255,.09);margin:6px 0}
+.proj-av{width:34px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-radius:8px;padding:2px}
+.proj-av .av{width:30px;height:30px;border-radius:9px;border:2px solid transparent;transition:.18s border-color, .18s transform;
+  position:relative;overflow:hidden;display:grid;place-items:center;isolation:isolate}
+.proj-av:hover .av{transform:scale(1.06)}
+.proj-av.active .av{border-color:var(--mint)}
+.proj-av span{font-size:7.5px;line-height:1.15;color:var(--text-3);text-align:center;max-width:44px}
+.proj-av .av-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;opacity:.98;pointer-events:none}
+.av-n{background:radial-gradient(circle at 30% 30%,#7db5ff,#3d6bd8);display:grid;place-items:center;color:#fff;font-weight:600;font-size:13px;border-radius:50% !important}
+.av-1{background:linear-gradient(135deg,#3f7d57,#16352a)}
+.av-2{background:linear-gradient(135deg,#b9a06a,#4d3f23)}
+.rail .spacer{flex:1}
+.bell{position:relative}
+.bell::after{content:"";position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--mint)}
+.me{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--stroke-2);display:grid;place-items:center;
+  font-size:11px;font-weight:600;color:var(--text-2)}
+
+/* ---- stage / map ---- */
+.stage{position:relative;flex:1;overflow:hidden;--split:55%}
+.map-real{position:absolute;inset:0;z-index:0;transition:opacity .4s}
+.map-real .leaflet-container{width:100%;height:100%;background:#0a100e}
+.map-real .leaflet-tile-pane{filter:saturate(.76) contrast(.92) brightness(.58)}
+.map-real .leaflet-control-attribution{background:rgba(10,16,14,.72);color:var(--text-2);border-radius:8px;padding:1px 6px}
+.map-real .leaflet-control-attribution a{color:var(--mint)}
+.sea{position:absolute;inset:0;transition:opacity .4s}
+.sea svg{width:100%;height:100%;display:block}
+.sea{z-index:1;opacity:.14;pointer-events:none}
+.stage.basemap-off .sea{opacity:.04}
+.stage.basemap-off .map-real{opacity:.08}
+.haze{position:absolute;left:0;right:0;top:0;height:42%;pointer-events:none;transition:opacity .8s;
+  background:linear-gradient(180deg,rgba(231,240,238,.85) 0%,rgba(216,232,229,.45) 22%,rgba(190,219,214,.12) 55%,transparent 100%)}
+.ray{position:absolute;top:-6%;height:58%;width:26%;pointer-events:none;filter:blur(22px);opacity:.5;transition:opacity .8s;
+  background:linear-gradient(100deg,transparent 15%,rgba(255,255,255,.4) 50%,transparent 85%);transform:skewX(-16deg)}
+.ray.r1{left:14%}.ray.r2{left:52%;opacity:.32;width:20%}
+.vignette{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 30%,transparent 55%,rgba(2,10,8,.42) 100%),
+             linear-gradient(180deg,transparent 70%,rgba(3,12,10,.5) 100%)}
+.stage.view-2d .haze,.stage.view-2d .ray{opacity:0}
+
+.sea{animation:seaDrift 18s ease-in-out infinite alternate}
+.haze{animation:hazeFloat 11s ease-in-out infinite alternate}
+.ray.r1{animation:raySweepR1 9s ease-in-out infinite alternate}
+.ray.r2{animation:raySweepR2 12s ease-in-out infinite alternate}
+
+@keyframes seaDrift{
+  0%{transform:translate3d(0,0,0) scale(1);opacity:.28}
+  50%{transform:translate3d(-1.2%,0.6%,0) scale(1.018);opacity:.34}
+  100%{transform:translate3d(1%, -0.5%,0) scale(1.01);opacity:.3}
+}
+
+@keyframes hazeFloat{
+  0%{transform:translate3d(0,0,0);opacity:.82}
+  50%{transform:translate3d(0.8%,1.2%,0);opacity:.68}
+  100%{transform:translate3d(-0.6%,0.6%,0);opacity:.78}
+}
+
+@keyframes raySweepR1{
+  0%{transform:skewX(-16deg) translate3d(-1.5%,0,0) scaleX(1);opacity:.44}
+  50%{transform:skewX(-14deg) translate3d(1.4%,1.4%,0) scaleX(1.05);opacity:.6}
+  100%{transform:skewX(-17deg) translate3d(2.4%,-1.2%,0) scaleX(.98);opacity:.48}
+}
+
+@keyframes raySweepR2{
+  0%{transform:skewX(-16deg) translate3d(1.1%,0,0) scaleX(1);opacity:.26}
+  50%{transform:skewX(-13deg) translate3d(-1.7%,1%,0) scaleX(1.08);opacity:.42}
+  100%{transform:skewX(-18deg) translate3d(1.5%,-0.8%,0) scaleX(.95);opacity:.3}
+}
+
+/* NDVI/DEM image is rendered as a Leaflet image overlay (no perspective) */
+/* split / reveal */
+.split-bar{position:absolute;top:9%;bottom:21%;left:var(--split);width:0;z-index:30;display:none}
+.stage.split-on .split-bar{display:block}
+.split-line{position:absolute;top:0;bottom:0;left:-1px;width:2px;background:rgba(255,255,255,.85);box-shadow:0 0 12px rgba(0,0,0,.5)}
+.split-grip{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;
+  background:#0f1916;border:1.5px solid rgba(255,255,255,.7);display:grid;place-items:center;color:#fff;cursor:ew-resize;touch-action:none}
+.split-tag{position:absolute;top:-30px;transform:translateX(-50%);font-size:10.5px;letter-spacing:.4px;
+  background:rgba(10,17,14,.85);border:1px solid var(--stroke);padding:3px 9px;border-radius:999px;color:var(--text-2);white-space:nowrap}
+.split-tag.l{left:-60px}.split-tag.r{left:60px}
+
+/* ---- glass card base ---- */
+.glass{background:var(--panel);border:1px solid var(--stroke);border-radius:var(--r-lg);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:var(--shadow)}
+
+/* ---- project card ---- */
+.proj-card{position:absolute;top:14px;left:14px;z-index:40;display:flex;align-items:flex-start;gap:10px;padding:10px 12px;max-width:300px}
+.proj-card .back{width:28px;height:28px;border-radius:50%;border:1px solid var(--stroke-2);display:grid;place-items:center;color:var(--text-2);flex:0 0 auto;transition:.15s}
+.proj-card .back:hover{color:var(--text);border-color:var(--text-3)}
+.proj-meta{min-width:0;flex:1}
+.proj-meta h2{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-meta .area{font-size:12.5px;color:var(--text);margin-top:1px}
+.proj-meta .date{font-size:11.5px;color:var(--text-3);margin-top:1px}
+.proj-card .fold{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);flex:0 0 auto}
+.proj-card .fold:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.proj-card.folded .proj-meta,.proj-card.folded .back{display:none}
+
+/* ---- top tabs ---- */
+.tabs{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:40;display:flex;padding:4px;gap:2px}
+.tab{padding:7px 16px;border-radius:11px;font-weight:500;color:var(--text-2);transition:.18s}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--green-btn);color:#eafff6;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 14px rgba(47,158,116,.35)}
+
+/* ---- DEM popup ---- */
+.dem-anchor{position:absolute;left:38%;top:17%;z-index:450;display:none}
+.dem-anchor.is-visible{display:block}
+.dem-popup{width:268px;padding:0 0 12px;cursor:default}
+.dem-head{display:flex;align-items:center;padding:11px 14px 9px;border-bottom:1px solid var(--stroke);cursor:grab;user-select:none}
+.dem-head:active{cursor:grabbing}
+.dem-head span{font-size:12px;letter-spacing:.8px;color:var(--text-2);font-weight:500}
+.dem-body{padding:10px 14px 0}
+.dem-body label{font-size:12px;color:var(--text-2)}
+.slider{margin:10px 0 12px;-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--mint) var(--fill,100%),rgba(255,255,255,.18) var(--fill,100%));outline:none}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--mint);
+  border:3px solid #0d1613;box-shadow:0 0 0 1px var(--mint);cursor:pointer}
+.slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--mint);border:3px solid #0d1613;cursor:pointer}
+.dem-actions{display:flex;gap:6px}
+.ibtn{width:31px;height:31px;border-radius:8px;display:grid;place-items:center;color:var(--mint);
+  background:rgba(60,232,166,.08);border:1px solid rgba(60,232,166,.18);transition:.15s}
+.ibtn:hover{background:rgba(60,232,166,.18)}
+.ibtn.toggled{background:var(--mint);color:#06231a}
+
+
+/* ---- map tools / compass ---- */
+.map-tools{position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;padding:5px;gap:3px;border-radius:13px}
+.mtool{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--text-2);transition:.15s}
+.mtool:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.mtool.toggled{background:var(--mint);color:#06231a}
+
+
+/* ---- minimap ---- */
+.minimap{position:absolute;right:14px;bottom:170px;width:118px;height:96px;border-radius:18px;overflow:hidden;
+  border:1px solid var(--stroke);box-shadow:var(--shadow);cursor:pointer;z-index:38;transition:.2s border-color}
+.minimap:hover{border-color:var(--mint)}
+.minimap svg{width:100%;height:100%;display:block}
+
+/* ---- timeline ---- */
+.timeline{position:absolute;left:14px;right:496px;bottom:14px;z-index:42;padding:10px 12px 12px;border-radius:18px}
+.tl-top{display:flex;align-items:center;gap:7px;flex-wrap:nowrap}
+.btn-green{display:flex;align-items:center;gap:7px;background:var(--green-btn);color:#eafff6;font-weight:500;
+  padding:8px 15px;border-radius:11px;transition:.15s;box-shadow:0 4px 14px rgba(47,158,116,.3)}
+.btn-green:hover{background:var(--green-btn-hi)}
+.chip{padding:7px 12px;border-radius:10px;color:var(--text-2);font-size:12.5px;font-weight:500;
+  border:1px solid transparent;transition:.15s;white-space:nowrap}
+.chip:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.chip.outline{border-color:var(--stroke-2)}
+.chip.active{background:rgba(255,255,255,.1);color:var(--text);border-color:var(--stroke-2)}
+.tl-top .gap{flex:1}
+.round-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--text-2);transition:.15s;border:1px solid transparent}
+.round-ic:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.chip.play{display:flex;align-items:center;gap:6px;border:1px solid var(--stroke-2)}
+.chip.play.playing{background:var(--mint);color:#06231a;border-color:var(--mint)}
+.tl-grid{display:grid;grid-template-columns:236px 1fr;margin-top:9px;column-gap:10px}
+.tl-labels{display:flex;flex-direction:column;gap:6px;padding-top:18px}
+.layer-row{display:flex;align-items:center;gap:7px;height:38px;padding:0 8px;border-radius:10px;background:rgba(255,255,255,.03);cursor:default}
+.layer-drag-handle{width:14px;height:24px;display:grid;place-items:center;cursor:grab;color:var(--text-3);flex:0 0 auto;opacity:.5}
+.layer-drag-handle:hover{opacity:1;color:var(--text)}
+.layer-drag-handle:active{cursor:grabbing}
+.layer-row.drag-over{background:rgba(60,232,166,.1);outline:1px dashed rgba(60,232,166,.4)}
+.layer-row.dragging{opacity:.4}
+.layer-row .lname{flex:1;display:flex;align-items:center;gap:7px;min-width:0;font-size:12.5px;font-weight:500}
+.layer-row .lname small{display:block;font-size:10.5px;color:var(--text-3);font-weight:400}
+.layer-row .sw{width:20px;height:20px;border-radius:6px;flex:0 0 auto}
+.sw.ndvi{background:linear-gradient(135deg,#f3e94e,#3ce8a6 55%,#2d6cd8)}
+.sw.base{background:radial-gradient(circle at 35% 35%,#67c2b4,#1c5b56)}
+.eye-t,.dots-t{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);flex:0 0 auto}
+.eye-t:hover,.dots-t:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.eye-t.on{color:var(--mint)}
+.tracks-scroller{overflow-x:auto;overflow-y:hidden;border-radius:10px}
+.tracks{position:relative;min-width:100%;width:var(--tlw,100%)}
+.ruler{display:flex;height:18px;position:relative}
+.ruler i{position:absolute;top:0;font-style:normal;font-size:10px;letter-spacing:.6px;color:var(--text-3);transform:translateX(-50%)}
+.track{position:relative;height:38px;border-radius:10px;background:rgba(255,255,255,.045);margin-top:6px;overflow:hidden}
+.track.ndvi-track{background:linear-gradient(180deg,rgba(60,232,166,.12),rgba(60,232,166,.05));border:1px solid rgba(60,232,166,.18)}
+.track .gridlines{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),rgba(255,255,255,.06) calc(25% - 1px) 25%)}
+.kf{position:absolute;top:50%;width:13px;height:13px;background:var(--mint);transform:translate(-50%,-50%) rotate(45deg);
+  border-radius:2.5px;cursor:pointer;transition:.15s box-shadow,.15s background;box-shadow:0 0 0 0 rgba(60,232,166,.4)}
+.kf:hover{box-shadow:0 0 0 5px rgba(60,232,166,.18)}
+.kf.lit{background:#fff;box-shadow:0 0 14px 3px rgba(60,232,166,.7)}
+.thumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:38px;height:26px;border-radius:6px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.22);cursor:pointer;transition:.15s border-color,.15s transform}
+.thumb:hover{border-color:var(--mint);transform:translate(-50%,-50%) scale(1.08)}
+.thumb svg{width:100%;height:100%;display:block}
+.playhead{position:absolute;top:0;bottom:0;left:0%;width:12px;transform:translateX(-6px);z-index:6;pointer-events:auto;cursor:ew-resize;
+  filter:drop-shadow(0 0 6px rgba(60,232,166,.8))}
+.playhead::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:1.5px;transform:translateX(-50%);background:var(--mint)}
+.playhead::before{content:"";position:absolute;top:-1px;left:50%;width:9px;height:9px;border-radius:2px;background:var(--mint);transform:translateX(-50%) rotate(45deg)}
+
+/* add-layers menu */
+.menu{position:absolute;bottom:calc(100% + 8px);left:0;width:236px;padding:6px;display:none;z-index:80;border-radius:14px}
+.menu.open{display:block}
+.menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 9px;border-radius:9px;text-align:left;transition:.12s}
+.menu-item:hover{background:rgba(255,255,255,.06)}
+.menu-item .mk{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--stroke-2);display:grid;place-items:center;color:#06231a;flex:0 0 auto}
+.menu-item.on .mk{background:var(--mint);border-color:var(--mint)}
+.menu-item .mi-t{flex:1;font-size:12.5px}
+.menu-item .mi-t small{display:block;color:var(--text-3);font-size:10.5px}
+.beta{font-size:9px;padding:2px 6px;border-radius:99px;background:var(--mint-soft);color:var(--mint);letter-spacing:.5px}
+
+/* ---- story panel ---- */
+.story-panel{position:absolute;top:10px;right:10px;bottom:10px;width:472px;z-index:50;display:flex;flex-direction:column;gap:10px;
+  transition:transform .45s cubic-bezier(.4,.05,.2,1),opacity .35s,width .35s}
+.story-panel.hidden{transform:translateX(110%);opacity:0;pointer-events:none}
+.story-panel.wide{width:600px}
+.sp-head{padding:14px 16px 12px;flex:0 0 auto}
+.sp-toprow{display:flex;align-items:center;gap:8px}
+.coords{display:flex;align-items:center;gap:7px;background:var(--chip);border:1px solid var(--stroke);
+  padding:5px 10px;border-radius:99px;font-family:var(--font-mono);font-size:11px;color:var(--text-2);white-space:nowrap;flex-wrap:nowrap}
+.coords button{color:var(--text-3);display:grid;place-items:center}
+.coords button:hover{color:var(--mint)}
+.share-chip{display:flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--stroke);
+  padding:5px 12px;border-radius:99px;font-size:11.5px;font-weight:500;color:var(--text-2);transition:.15s}
+.share-chip:hover{color:var(--text);border-color:var(--stroke-2)}
+.sp-toprow .gap{flex:1}
+.pico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--text-3);transition:.15s}
+.pico:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.sp-title{font-family:var(--font-display);font-weight:600;font-size:23px;line-height:1.3;margin:16px 0 14px;letter-spacing:-.01em}
+.dots{display:flex;gap:5px}
+.dot{width:14px;height:4px;border-radius:99px;background:rgba(255,255,255,.18);transition:.2s;padding:0}
+.dot:hover{background:rgba(255,255,255,.4)}
+.dot.active{background:var(--mint);width:22px}
+.sp-scroll{flex:1;overflow-y:auto;border-radius:var(--r-lg);scrollbar-gutter:stable}
+.sp-section{padding:18px 16px 16px;position:relative}
+.slide-title{font-family:var(--font-display);font-weight:600;font-size:25px;line-height:1.25;letter-spacing:-.01em;
+  max-width:88%;margin-bottom:13px}
+.slide-title .hl{color:var(--mint);font-weight:600}
+.slide-body{color:var(--text-2);font-size:13px;line-height:1.62;margin-bottom:15px}
+.slide-body strong{color:var(--text);font-weight:600}
+.fade-swap{transition:opacity .22s,transform .22s}
+.fade-swap.out{opacity:0;transform:translateY(5px)}
+
+/* widget cards */
+.wcard{background:var(--card);border:1px solid var(--stroke);border-radius:14px;padding:14px;margin-bottom:11px}
+.w-head{display:flex;align-items:flex-start;gap:8px}
+.w-head h4{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.info-i{color:var(--text-3);display:inline-grid;place-items:center;cursor:pointer;transition:.15s}
+.info-i:hover{color:var(--mint)}
+.w-head .gap{flex:1}
+.badge{display:inline-flex;align-items:center;gap:5px;background:#11221c;border:1px solid rgba(60,232,166,.22);
+  color:var(--mint);font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:99px;font-family:var(--font-mono)}
+.w-sub{font-size:11.5px;color:var(--text-3);margin-top:2px}
+.chart-wrap{position:relative;margin-top:14px;width:100%;height:240px;border-radius:14px;overflow:hidden;background:linear-gradient(160deg,rgba(18,30,24,.72) 0%,rgba(10,18,14,.9) 100%);border:1px solid rgba(60,232,166,.08)}
+#biomassChart{display:block;cursor:crosshair}
+.chart-tip{position:absolute;pointer-events:none;background:rgba(8,18,14,.95);border:1px solid rgba(60,232,166,.28);border-radius:10px;
+  padding:7px 12px;font-size:11.5px;font-family:var(--font-mono);color:var(--text);transform:translate(-50%,-140%);
+  opacity:0;transition:opacity .12s;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.6),0 0 0 1px rgba(60,232,166,.08);z-index:10}
+.stat-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.stat{background:#11201b66;border:1px solid var(--stroke);border-radius:11px;padding:9px 11px;cursor:pointer;transition:.15s border-color}
+.stat:hover{border-color:rgba(60,232,166,.35)}
+.stat em{display:block;font-style:normal;font-size:10.5px;color:#7fb4a0;margin-bottom:3px}
+.stat b{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.stat b .info-i svg{width:11px;height:11px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+.duo .wcard{margin-bottom:0}
+.duo h5{font-size:12px;color:var(--text-2);font-weight:500;margin-bottom:5px}
+.duo .val{font-size:16.5px;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:9px}
+.duo .foot{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--text-3)}
+
+/* sankey widget footer */
+.sankey-foot{display:flex;align-items:center;gap:6px;padding:8px 14px 10px;border-top:1px solid var(--stroke)}
+.sfoot-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;transition:.15s opacity}
+.sfoot-btn:hover{opacity:.82}
+.sfoot-btn.primary{background:var(--green-btn);color:#eafff6}
+.sfoot-btn.ghost{background:rgba(255,255,255,.07);color:var(--text-2)}
+.sfoot-ico{width:28px;height:28px;display:grid;place-items:center;border-radius:7px;background:rgba(255,255,255,.05);color:var(--text-3);cursor:pointer;transition:.15s}
+.sfoot-ico:hover{background:rgba(255,255,255,.1);color:var(--text)}
+/* area / bubble legends */
+.area-legend,.bubble-legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:10px;font-size:11px;color:var(--text-2)}
+.area-leg-item,.bleg-item{display:flex;align-items:center;gap:5px}
+.area-leg-item i,.bleg-item i{width:10px;height:10px;border-radius:2px;flex-shrink:0;font-style:normal}
+
+/* compare widget */
+.cmp{position:relative;border-radius:12px;overflow:hidden;height:198px;--pos:50%;border:1px solid var(--stroke);
+  cursor:ew-resize;touch-action:none;user-select:none}
+.cmp .pane{position:absolute;inset:0}
+.cmp .pane svg{width:100%;height:100%;display:block}
+.cmp .pane.a{clip-path:inset(0 calc(100% - var(--pos)) 0 0)}
+.cmp-line{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;background:rgba(10,16,14,.85);transform:translateX(-1px)}
+.cmp-grip{position:absolute;top:50%;left:var(--pos);transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;
+  background:#0f1916;border:1.5px solid rgba(255,255,255,.6);display:grid;place-items:center;color:var(--mint)}
+.cmp-tag{position:absolute;top:9px;display:flex;align-items:center;gap:6px;background:rgba(10,16,13,.82);
+  border:1px solid var(--stroke);backdrop-filter:blur(6px);padding:5px 10px;border-radius:99px;font-size:11px;font-weight:500;transition:.15s}
+.cmp-tag:hover{border-color:var(--mint);color:var(--mint)}
+.cmp-tag.a{left:9px}.cmp-tag.b{right:9px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.legend p{font-size:11.5px;line-height:1.55;color:var(--text-2)}
+.legend p b{color:var(--text)}
+.legend .key{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.key.blue{background:#3d6cd8}.key.green{background:#37c98c}
+
+/* ---- tooltip via data-tip ---- */
+[data-tip]{position:relative}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);
+  background:#0d1714;border:1px solid var(--stroke-2);color:var(--text);font-size:10.5px;font-weight:400;padding:4px 9px;
+  border-radius:7px;white-space:nowrap;z-index:200;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.rail [data-tip]:hover::after{left:calc(100% + 9px);bottom:auto;top:50%;transform:translateY(-50%)}
+.map-tools [data-tip]:hover::after,.compass[data-tip]:hover::after{left:calc(100% + 9px);right:auto;bottom:auto;top:50%;transform:translateY(-50%)}
+
+/* ---- toast ---- */
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);background:#101a16;border:1px solid var(--stroke-2);
+  color:var(--text);padding:9px 16px;border-radius:11px;font-size:12.5px;z-index:500;opacity:0;pointer-events:none;
+  transition:.25s;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast .tdot{width:7px;height:7px;border-radius:50%;background:var(--mint)}
+
+.icon{width:17px;height:17px;flex:0 0 auto}
+.icon.sm{width:13px;height:13px}
+.icon.xs{width:11px;height:11px}
+</style>
+</head>
+<body>
+
+<!-- ====== icon sprite ====== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-chev-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6 8.5 12l6 6"/></symbol>
+<symbol id="i-chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"/></symbol>
+<symbol id="i-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="5" width="16" height="14" rx="2.5"/><path d="M15 5v14"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.8 12 4l8 6.8V19a1.5 1.5 0 0 1-1.5 1.5h-4V15h-5v5.5h-4A1.5 1.5 0 0 1 4 19z"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19.2A2.7 2.7 0 0 1 7.7 16.5H19.5V3.5H7.7A2.7 2.7 0 0 0 5 6.2z"/><path d="M5 19.2A2.7 2.7 0 0 0 7.7 21.9H19.5v-5.4"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M9.6 9.3a2.6 2.6 0 1 1 3.7 2.4c-.8.4-1.3 1-1.3 1.9v.3"/><path d="M12 17h.01" stroke-width="2.4"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 15.5H6.2l1.4-2v-3.7a4.4 4.4 0 0 1 8.8 0v3.7z"/><path d="M10.2 18.6a1.9 1.9 0 0 0 3.6 0"/></symbol>
+<symbol id="i-dl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v9.5m0 0 3.8-3.8M12 14l-3.8-3.8M5 19.2h14"/></symbol>
+<symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10A8 8 0 1 1 6 15.3"/><path d="M4.5 5.2V10h4.8"/></symbol>
+<symbol id="i-zoom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="5.7"/><path d="m14.8 14.8 4.4 4.4M10.5 8.2v4.6M8.2 10.5h4.6"/></symbol>
+<symbol id="i-elev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 17.5 5-7.6 3.7 5.1 2.5-3.5 5.8 6z"/><circle cx="17" cy="6.5" r="1.6"/></symbol>
+<symbol id="i-split" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M12 5v14"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6 20 8l-8 4.4L4 8z"/><path d="m5 11.7 7 3.8 7-3.8"/><path d="m5 15.3 7 3.8 7-3.8"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 12S6.3 6 12 6s9.2 6 9.2 6-3.5 6-9.2 6-9.2-6-9.2-6z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+<symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4 4 16 16"/><path d="M10.7 6.3c.4 0 .9-.1 1.3-.1 5.7 0 9.2 5.8 9.2 5.8a15.6 15.6 0 0 1-2.9 3.4M7.2 7.7C4.4 9.4 2.8 12 2.8 12s3.5 5.8 9.2 5.8c1 0 1.9-.2 2.8-.5"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+<symbol id="i-fit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8.7 4H6a2 2 0 0 0-2 2v2.7M15.3 4H18a2 2 0 0 1 2 2v2.7M20 15.3V18a2 2 0 0 1-2 2h-2.7M4 15.3V18a2 2 0 0 0 2 2h2.7"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 11v5"/><path d="M12 8h.01" stroke-width="2.4"/></symbol>
+<symbol id="i-ruler" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.2 17.2 3 21 6.8 6.8 21z"/><path d="m7.6 16.4 1.5 1.5M10.6 13.4l1.5 1.5M13.6 10.4l1.5 1.5M16.6 7.4l1.5 1.5"/></symbol>
+<symbol id="i-cols" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="7.4" height="14" rx="2"/><rect x="13.1" y="5" width="7.4" height="14" rx="2"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.7 14.3a4.4 4.4 0 0 0 6.3.4l2.4-2.4a4.4 4.4 0 0 0-6.2-6.2l-1.2 1.1"/><path d="M14.3 9.7a4.4 4.4 0 0 0-6.3-.4l-2.4 2.4a4.4 4.4 0 0 0 6.2 6.2l1.2-1.1"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.8 13.2"/><path d="M21 3l-6.5 18-3.7-8.3L2.5 9z"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5h6v6M20.5 3.5 13 11M9.5 20.5h-6v-6M3.5 20.5 11 13"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5.5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18.5" cy="12" r="1.5"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.5 5.4v13.2L19 12z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M8.5 5.8v12.4M15.5 5.8v12.4"/></symbol>
+<symbol id="i-prev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 18 9.8 12l7.7-6z" fill="currentColor" stroke="none"/><path d="M6.5 6v12"/></symbol>
+<symbol id="i-next" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 18 14.2 12 6.5 6z" fill="currentColor" stroke="none"/><path d="M17.5 6v12"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5.5 12h13"/></symbol>
+<symbol id="i-trend" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 16.5 5.5-5.5 4 4 7.5-8"/><path d="M14.8 7h5.7v5.7"/></symbol>
+<symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/><path d="M14 4h6v6M20 4l-9 9"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 12.5 4.3 4.3 8.7-9.6"/></symbol>
+<symbol id="i-grab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 8.5-3.5 3.5 3.5 3.5M14.5 8.5l3.5 3.5-3.5 3.5"/></symbol>
+</defs></svg>
+
+<!-- ====== procedural texture filters ====== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gSea" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#d6e6e1"/><stop offset=".28" stop-color="#5fb9ac"/>
+    <stop offset=".62" stop-color="#1f7f7c"/><stop offset="1" stop-color="#0d3a3e"/>
+  </linearGradient>
+  <filter id="fSea" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.0026 0.0043" numOctaves="5" seed="2"/>
+    <feColorMatrix type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1"/>
+    <feComponentTransfer>
+      <feFuncR type="table" tableValues="0.03 0.06 0.10 0.17 0.46 0.86 0.94"/>
+      <feFuncG type="table" tableValues="0.15 0.29 0.46 0.64 0.80 0.89 0.88"/>
+      <feFuncB type="table" tableValues="0.19 0.32 0.47 0.62 0.75 0.81 0.75"/>
+    </feComponentTransfer>
+  </filter>
+  <filter id="fSeaDetail" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="3" seed="9"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0.02  0 0 0 0 0.10  0 0 0 0 0.10  0 0 0.9 0 0"/>
+  </filter>
+  <filter id="fNdvi" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.011 0.017" numOctaves="5" seed="7" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="g"/>
+    <feComponentTransfer in="g" result="ramp">
+      <feFuncR type="table" tableValues="0.10 0.12 0.18 0.55 0.93 0.99 0.96"/>
+      <feFuncG type="table" tableValues="0.24 0.43 0.72 0.88 0.93 0.89 0.66"/>
+      <feFuncB type="table" tableValues="0.58 0.57 0.40 0.27 0.23 0.18 0.10"/>
+    </feComponentTransfer>
+    <feDiffuseLighting in="noise" surfaceScale="5.5" diffuseConstant="1" lighting-color="#fff" result="lit">
+      <feDistantLight azimuth="235" elevation="56"/>
+    </feDiffuseLighting>
+    <feColorMatrix in="lit" type="matrix" values="0.85 0 0 0 0.12  0 0.85 0 0 0.12  0 0 0.85 0 0.12  0 0 0 0 1" result="lit2"/>
+    <feComposite in="ramp" in2="lit2" operator="arithmetic" k1="1" k2="0" k3="0" k4="0" result="shaded"/>
+    <feComposite in="shaded" in2="SourceGraphic" operator="in"/>
+  </filter>
+  <filter id="fDemA" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.02 0.028" numOctaves="5" seed="3" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="g"/>
+    <feComponentTransfer in="g" result="ramp">
+      <feFuncR type="table" tableValues="0.14 0.20 0.45 0.85 0.97 0.95"/>
+      <feFuncG type="table" tableValues="0.30 0.55 0.78 0.91 0.92 0.80"/>
+      <feFuncB type="table" tableValues="0.60 0.48 0.32 0.26 0.20 0.14"/>
+    </feComponentTransfer>
+    <feDiffuseLighting in="noise" surfaceScale="4" diffuseConstant="1" lighting-color="#fff" result="lit">
+      <feDistantLight azimuth="235" elevation="58"/></feDiffuseLighting>
+    <feColorMatrix in="lit" type="matrix" values="0.85 0 0 0 0.13 0 0.85 0 0 0.13 0 0 0.85 0 0.13 0 0 0 0 1" result="lit2"/>
+    <feComposite in="ramp" in2="lit2" operator="arithmetic" k1="1" k2="0" k3="0" k4="0" result="sh"/>
+    <feComposite in="sh" in2="SourceGraphic" operator="in"/>
+  </filter>
+  <filter id="fDemB" x="-8%" y="-8%" width="116%" height="116%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.02 0.028" numOctaves="5" seed="12" result="noise"/>
+    <feColorMatrix in="noise" type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 0 1" result="g"/>
+    <feComponentTransfer in="g" result="ramp">
+      <feFuncR type="table" tableValues="0.08 0.12 0.25 0.62 0.93 0.97"/>
+      <feFuncG type="table" tableValues="0.26 0.48 0.76 0.90 0.94 0.88"/>
+      <feFuncB type="table" tableValues="0.62 0.55 0.38 0.28 0.22 0.16"/>
+    </feComponentTransfer>
+    <feDiffuseLighting in="noise" surfaceScale="4" diffuseConstant="1" lighting-color="#fff" result="lit">
+      <feDistantLight azimuth="235" elevation="58"/></feDiffuseLighting>
+    <feColorMatrix in="lit" type="matrix" values="0.85 0 0 0 0.13 0 0.85 0 0 0.13 0 0 0.85 0 0.13 0 0 0 0 1" result="lit2"/>
+    <feComposite in="ramp" in2="lit2" operator="arithmetic" k1="1" k2="0" k3="0" k4="0" result="sh"/>
+    <feComposite in="sh" in2="SourceGraphic" operator="in"/>
+  </filter>
+</defs></svg>
+
+<div class="app">
+
+  <!-- ================= LEFT RAIL ================= -->
+  <nav class="rail" aria-label="Primary">
+    <div class="logo">n</div>
+    <button class="rail-btn active" data-tip="Home" data-rail><svg class="icon"><use href="#i-home"/></svg></button>
+    <button class="rail-btn" data-tip="Knowledge base" data-rail><svg class="icon"><use href="#i-book"/></svg></button>
+    <button class="rail-btn" data-tip="Help & support" data-rail><svg class="icon"><use href="#i-help"/></svg></button>
+    <div class="rail-sep"></div>
+    <button class="proj-av active" data-proj="nabat demo workspace"><span class="av av-n">n</span></button>
+    <button class="proj-av" data-proj="Aramco Ecopark"><span class="av av-1"></span><span>Aramco Ecopark</span></button>
+    <button class="proj-av" data-proj="Al Marzoum"><span class="av av-2"></span><span>Al Marzoum</span></button>
+    <div class="spacer"></div>
+    <button class="rail-btn bell" data-tip="Notifications"><svg class="icon"><use href="#i-bell"/></svg></button>
+    <button class="me" data-tip="Account — AZ">AZ</button>
+  </nav>
+
+  <!-- ================= MAP STAGE ================= -->
+  <main class="stage" id="stage">
+
+    <div class="map-real" id="stageMap" aria-hidden="true"></div>
+
+    <!-- procedural lagoon -->
+    <div class="sea" id="sea">
+      <svg viewBox="0 0 1440 1100" preserveAspectRatio="xMidYMid slice">
+        <rect width="1440" height="1100" fill="url(#gSea)"/>
+        <rect width="1440" height="1100" filter="url(#fSea)" opacity=".38"/>
+        <rect width="1440" height="1100" filter="url(#fSeaDetail)" opacity=".2"/>
+      </svg>
+    </div>
+    <div class="ray r1"></div><div class="ray r2"></div>
+    <div class="haze"></div>
+    <div class="vignette"></div>
+
+    <!-- NDVI terrain rendered as Leaflet image overlay -->
+
+    <!-- split / reveal divider -->
+    <div class="split-bar" id="splitBar">
+      <div class="split-line"></div>
+      <span class="split-tag l">NDVI</span><span class="split-tag r">Satellite</span>
+      <button class="split-grip" id="splitGrip" aria-label="Drag to reveal"><svg class="icon sm"><use href="#i-grab"/></svg></button>
+    </div>
+
+    <!-- project card -->
+    <header class="proj-card glass" id="projCard">
+      <button class="back" data-tip="Back to projects" id="backBtn"><svg class="icon sm"><use href="#i-chev-left"/></svg></button>
+      <div class="proj-meta">
+        <h2 id="projName">Project name, which can be truncated</h2>
+        <div class="area">Area name</div>
+        <div class="date" id="currentDateLabel">Current date: 14 Mar 2025</div>
+      </div>
+      <button class="fold" data-tip="Collapse" id="projFold"><svg class="icon sm"><use href="#i-panel"/></svg></button>
+    </header>
+
+    <!-- view tabs -->
+    <nav class="tabs glass" id="tabs">
+      <button class="tab" data-view="dashboard">Dashboard</button>
+      <button class="tab" data-view="exploration">Exploration</button>
+      <button class="tab active" data-view="story">Story</button>
+    </nav>
+
+    <!-- DEM popup -->
+    <div class="dem-anchor" id="demAnchor">
+      <div class="dem-popup glass" id="demPopup">
+        <div class="dem-head" id="demHead"><span>DEM</span></div>
+        <div class="dem-body">
+          <label for="opacity">Opacity</label>
+          <input class="slider" type="range" id="opacity" min="0" max="100" value="100" style="--fill:100%">
+          <div class="dem-actions">
+            <button class="ibtn" data-act="download" data-tip="Download layer"><svg class="icon sm"><use href="#i-dl"/></svg></button>
+            <button class="ibtn" data-act="reset" data-tip="Reset layer"><svg class="icon sm"><use href="#i-rotate"/></svg></button>
+            <button class="ibtn" data-act="zoomin" data-tip="Zoom to layer"><svg class="icon sm"><use href="#i-zoom"/></svg></button>
+            <button class="ibtn" data-act="elev" data-tip="Elevation profile"><svg class="icon sm"><use href="#i-elev"/></svg></button>
+            <button class="ibtn" data-act="split" data-tip="Split / reveal" id="demSplit"><svg class="icon sm"><use href="#i-split"/></svg></button>
+            <button class="ibtn" data-act="layers" data-tip="Layer stack"><svg class="icon sm"><use href="#i-layers"/></svg></button>
+            <button class="ibtn" data-act="hide" data-tip="Hide layer" id="demHide"><svg class="icon sm"><use id="demHideUse" href="#i-eye-off"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- left map tools -->
+    <div class="map-tools glass">
+      <button class="mtool" data-mtool="fit" data-tip="Fit to area"><svg class="icon"><use href="#i-fit"/></svg></button>
+      <button class="mtool" data-mtool="info" data-tip="Inspect pixel"><svg class="icon"><use href="#i-info"/></svg></button>
+      <button class="mtool" data-mtool="measure" data-tip="Measure distance"><svg class="icon"><use href="#i-ruler"/></svg></button>
+      <button class="mtool" data-mtool="split" data-tip="Split view" id="mtoolSplit"><svg class="icon"><use href="#i-cols"/></svg></button>
+    </div>
+    <!-- minimap -->
+    <button class="minimap" id="minimap" aria-label="Mini-map overview">
+      <svg viewBox="0 0 118 96">
+        <rect width="118" height="96" fill="#0b2731"/>
+        <path d="M-10 60 C20 35 45 70 75 48 C95 35 112 50 128 40 L128 110 L-10 110 Z" fill="#13413f"/>
+        <path d="M-10 18 C25 5 60 28 90 12 L128 5 L128 -10 L-10 -10 Z" fill="#0e3138"/>
+        <ellipse cx="38" cy="42" rx="16" ry="8" fill="#1b5a51" opacity=".8"/>
+        <rect x="62" y="36" width="26" height="18" rx="2" fill="none" stroke="#cfe8df" stroke-width="1.4"/>
+        <path d="M66 50 L78 41" stroke="#ff8a3d" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <!-- ============ TIMELINE ============ -->
+    <section class="timeline glass" aria-label="Timeline">
+      <div class="tl-top">
+        <div style="position:relative">
+          <button class="btn-green" id="addLayers"><svg class="icon sm"><use href="#i-layers"/></svg>Add Layers</button>
+          <div class="menu glass" id="layersMenu">
+            <button class="menu-item on" data-layer="dem"><span class="mk"><svg class="icon xs"><use href="#i-check"/></svg></span><span class="mi-t">DEM<small>Elevation layer</small></span></button>
+            <button class="menu-item" data-layer="moisture"><span class="mk"><svg class="icon xs"><use href="#i-check"/></svg></span><span class="mi-t">Soil moisture<small>SAR composite</small></span></button>
+            <button class="menu-item" data-layer="canopy"><span class="mk"><svg class="icon xs"><use href="#i-check"/></svg></span><span class="mi-t">Canopy height<small>Photogrammetry</small></span><span class="beta">BETA</span></button>
+            <button class="menu-item" data-layer="tidal"><span class="mk"><svg class="icon xs"><use href="#i-check"/></svg></span><span class="mi-t">Tidal extent<small>Hydrology model</small></span></button>
+          </div>
+        </div>
+        <button class="chip outline" id="resetBtn">Reset</button>
+        <button class="chip" data-range="1H">1H</button>
+        <button class="chip" data-range="6H">6H</button>
+        <button class="chip active" data-range="24H">24H</button>
+        <button class="chip" data-range="7D">7D</button>
+        <button class="chip" data-range="30D">30D</button>
+        <button class="chip" data-range="YTD">YTD</button>
+        <button class="chip" data-range="Custom">Custom</button>
+        <div class="gap"></div>
+        <button class="chip outline" id="panBtn">Pan</button>
+        <button class="round-ic" id="prevK" data-tip="Previous keyframe"><svg class="icon sm"><use href="#i-prev"/></svg></button>
+        <button class="chip play" id="playBtn"><svg class="icon sm"><use id="playUse" href="#i-play"/></svg><span id="playLbl">Play</span></button>
+        <button class="round-ic" id="nextK" data-tip="Next keyframe"><svg class="icon sm"><use href="#i-next"/></svg></button>
+        <button class="round-ic" id="tlMinus" data-tip="Zoom out timeline"><svg class="icon sm"><use href="#i-minus"/></svg></button>
+        <button class="round-ic" id="tlPlus" data-tip="Zoom in timeline"><svg class="icon sm"><use href="#i-plus"/></svg></button>
+      </div>
+
+      <div class="tl-grid">
+<div class="tl-labels" id="tlLabels">
+          <div class="layer-row" data-layer="dem" draggable="true">
+            <span class="layer-drag-handle" data-tip="Drag to reorder"><svg class="icon sm"><use href="#i-grab"/></svg></span>
+            <button class="eye-t" data-tip="Collapse row"><svg class="icon xs"><use href="#i-chev-down"/></svg></button>
+            <span class="sw ndvi"></span>
+            <span class="lname">DEM <svg class="icon xs info-i" data-info="Digital Elevation Model for terrain analysis."><use href="#i-info"/></svg></span>
+            <button class="eye-t on" id="eyeNdvi" data-tip="Toggle visibility"><svg class="icon sm"><use id="eyeNdviUse" href="#i-eye"/></svg></button>
+            <button class="dots-t" data-tip="Layer options"><svg class="icon sm"><use href="#i-more"/></svg></button>
+          </div>
+          <div class="layer-row" data-layer="basemap" draggable="true">
+            <span class="layer-drag-handle" data-tip="Drag to reorder"><svg class="icon sm"><use href="#i-grab"/></svg></span>
+            <button class="eye-t" data-tip="Collapse row"><svg class="icon xs"><use href="#i-chev-down"/></svg></button>
+            <span class="sw base"></span>
+            <span class="lname" style="display:block">Basemap | Google Maps<small id="basemapDate">14 May 2025 ‹</small></span>
+            <button class="eye-t on" id="eyeBase" data-tip="Toggle visibility"><svg class="icon sm"><use id="eyeBaseUse" href="#i-eye"/></svg></button>
+            <button class="dots-t" data-tip="Layer options"><svg class="icon sm"><use href="#i-more"/></svg></button>
+          </div>
+        </div>
+
+        <div class="tracks-scroller">
+          <div class="tracks" id="tracks">
+            <div class="ruler" id="ruler"></div>
+            <div class="track">
+              <div class="gridlines"></div>
+              <!-- thumbs injected by JS -->
+            </div>
+            <div class="track ndvi-track">
+              <div class="gridlines"></div>
+              <button class="kf" data-pos="18" data-date="13 Mar 2026" style="left:18%" data-tip="13 Mar 2026"></button>
+              <button class="kf" data-pos="42" data-date="28 Mar 2026" style="left:42%" data-tip="28 Mar 2026"></button>
+              <button class="kf" data-pos="86" data-date="27 Apr 2026" style="left:86%" data-tip="27 Apr 2026"></button>
+            </div>
+            <div class="playhead" id="playhead"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ STORY PANEL ============ -->
+    <aside class="story-panel" id="storyPanel" aria-label="Story">
+      <div class="sp-head glass">
+        <div class="sp-toprow">
+          <div class="coords"><span>44.507123, 40.182983</span>
+            <button id="copyCoords" data-tip="Copy coordinates"><svg class="icon xs"><use href="#i-copy"/></svg></button>
+          </div>
+          <button class="share-chip" id="shareBtn">Share <svg class="icon xs"><use href="#i-link"/></svg></button>
+          <div class="gap"></div>
+          <button class="pico" data-pico="download" data-tip="Export story"><svg class="icon sm"><use href="#i-dl"/></svg></button>
+          <button class="pico" data-pico="send" data-tip="Send to team"><svg class="icon sm"><use href="#i-send"/></svg></button>
+          <button class="pico" data-pico="expand" data-tip="Expand panel"><svg class="icon sm"><use href="#i-expand"/></svg></button>
+          <button class="pico" data-pico="more" data-tip="More"><svg class="icon sm"><use href="#i-more"/></svg></button>
+          <button class="pico" data-pico="close" data-tip="Close story"><svg class="icon sm"><use href="#i-close"/></svg></button>
+        </div>
+        <h1 class="sp-title">A one-year journey from a dangerous environment to a safe one in the area of [area&nbsp;name].</h1>
+        <div class="dots" id="dots"></div>
+      </div>
+
+      <div class="sp-scroll">
+        <div class="sp-section glass" style="border-radius:var(--r-lg)">
+          <div class="fade-swap" id="slideWrap" data-section="0">
+            <h3 class="slide-title" id="slideTitle">The canopy cover has increased by <b class="hl">12%</b></h3>
+            <p class="slide-body" id="slideBody"></p>
+          </div>
+
+          <!-- mangrove sankey widget -->
+          <div class="wcard" style="padding:0;overflow:hidden" data-section="1">
+            <canvas id="sankeyChart" width="420" height="200" style="width:100%;height:200px;display:block"></canvas>
+            <div class="sankey-foot">
+              <button class="sfoot-btn primary"><svg class="icon xs"><use href="#i-dl"/></svg> Download</button>
+              <button class="sfoot-btn ghost">Ask</button>
+              <div style="flex:1"></div>
+              <button class="sfoot-ico" data-tip="Refresh"><svg class="icon sm"><use href="#i-rotate"/></svg></button>
+              <button class="sfoot-ico" data-tip="Trend"><svg class="icon sm"><use href="#i-trend"/></svg></button>
+              <button class="sfoot-ico" data-tip="Copy"><svg class="icon sm"><use href="#i-copy"/></svg></button>
+              <button class="sfoot-ico" data-tip="Send"><svg class="icon sm"><use href="#i-send"/></svg></button>
+              <button class="sfoot-ico" data-tip="Link"><svg class="icon sm"><use href="#i-link"/></svg></button>
+            </div>
+          </div>
+
+          <!-- area classification widget -->
+          <div class="wcard" data-section="2">
+            <div class="w-head"><h4>Area classification over time <svg class="icon xs info-i" data-info="Land cover derived from satellite imagery (10 m resolution)."><use href="#i-info"/></svg></h4></div>
+            <canvas id="areaChart" width="420" height="155" style="width:100%;height:155px;display:block;margin-top:12px"></canvas>
+            <div class="area-legend">
+              <span class="area-leg-item"><i style="background:#2d6645"></i>Bareground</span>
+              <span class="area-leg-item"><i style="background:#3a8a5c"></i>Water</span>
+              <span class="area-leg-item"><i style="background:#3ce8a6"></i>Vegetation</span>
+            </div>
+          </div>
+
+          <!-- habitat health radar widget -->
+          <div class="wcard" data-section="3">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="flex:0 0 auto;padding-top:2px">
+                <div class="w-head"><h4>Habitat health index</h4></div>
+                <div class="w-sub">Multi-factor assessment</div>
+                <div style="margin-top:16px;font-size:11px;color:var(--text-3)">Overall Health Index</div>
+                <div style="font-size:22px;font-weight:700;color:var(--mint);font-family:var(--font-mono);margin-top:3px">78/100</div>
+              </div>
+              <canvas id="radarChart" width="230" height="190" style="flex:1;min-width:0;height:190px"></canvas>
+            </div>
+          </div>
+
+          <!-- data update bubble chart widget -->
+          <div class="wcard" data-section="4">
+            <div class="w-head"><h4>Data update per project <svg class="icon xs info-i" data-info="Bubble size represents data volume per update event."><use href="#i-info"/></svg></h4></div>
+            <canvas id="bubbleChart" width="420" height="185" style="width:100%;height:185px;display:block;margin-top:8px"></canvas>
+            <div class="bubble-legend">
+              <span class="bleg-item"><i style="background:#4a90d9"></i>Long_project_name_1</span>
+              <span class="bleg-item"><i style="background:#c4921a"></i>Long_project_name_2</span>
+              <span class="bleg-item"><i style="background:#c04080"></i>Project 3</span>
+              <span class="bleg-item"><i style="background:#3cb8a6"></i>Project 4</span>
+              <span class="bleg-item"><i style="background:#c4bc20"></i>Project 5</span>
+            </div>
+          </div>
+
+          <!-- biomass widget -->
+          <div class="wcard" data-section="5">
+            <div class="w-head">
+              <div>
+                <h4>Total biomass growth <svg class="icon xs info-i" data-info="Above-ground biomass estimated from canopy height × allometric model."><use href="#i-info"/></svg></h4>
+                <div class="w-sub">Tonnes per hectare over time</div>
+              </div>
+              <div class="gap"></div>
+              <span class="badge"><svg class="icon xs"><use href="#i-trend"/></svg>+29,42%</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="biomassChart" width="420" height="240" style="width:100%;height:240px;display:block"></canvas>
+              <div class="chart-tip" id="chartTip"></div>
+            </div>
+            <div class="stat-row">
+              <div class="stat" data-info="Latest model run · May 2026"><em>Current (2026)</em><b>145 t/ha <svg class="icon info-i xs"><use href="#i-info"/></svg></b></div>
+              <div class="stat" data-info="Net gain since baseline"><em>Total Growth</em><b>+25 <svg class="icon info-i xs"><use href="#i-info"/></svg></b></div>
+              <div class="stat" data-info="Mean annual accumulation"><em>Avg. Annual</em><b>+12.5 <svg class="icon info-i xs"><use href="#i-info"/></svg></b></div>
+            </div>
+          </div>
+
+          <!-- duo widgets -->
+          <div class="duo">
+            <div class="wcard">
+              <h5>Vegetation health</h5>
+              <div class="val">0.8 avg NDVI <svg class="icon xs info-i" data-info="Mean NDVI across the polygon, cloud-masked."><use href="#i-info"/></svg></div>
+              <div class="foot"><span class="badge"><svg class="icon xs"><use href="#i-trend"/></svg>+3%</span> QoQ</div>
+            </div>
+            <div class="wcard">
+              <h5>Land cover change</h5>
+              <div class="val">78% <svg class="icon xs info-i" data-info="Share of the polygon classified as vegetated land cover."><use href="#i-info"/></svg></div>
+              <div class="foot"><span class="badge"><svg class="icon xs"><use href="#i-trend"/></svg>+8% (8.5 ha)</span> QoQ</div>
+            </div>
+          </div>
+
+          <!-- DEM compare -->
+          <div class="wcard" style="padding:10px 10px 14px" data-section="6">
+            <div class="cmp" id="cmp">
+              <div class="pane b"><svg viewBox="0 0 440 200" preserveAspectRatio="xMidYMid slice"><rect width="440" height="200" fill="#888" filter="url(#fDemB)"/></svg></div>
+              <div class="pane a"><svg viewBox="0 0 440 200" preserveAspectRatio="xMidYMid slice"><rect width="440" height="200" fill="#888" filter="url(#fDemA)"/></svg></div>
+              <div class="cmp-line"></div>
+              <button class="cmp-tag a" data-dem="DEM 23 May 2025"><svg class="icon xs"><use href="#i-ext"/></svg> DEM 23 May 2025</button>
+              <button class="cmp-tag b" data-dem="DEM 14 May 2026"><svg class="icon xs"><use href="#i-ext"/></svg> DEM 14 May 2026</button>
+              <div class="cmp-grip" id="cmpGrip"><svg class="icon sm"><use href="#i-grab"/></svg></div>
+            </div>
+            <div class="legend">
+              <p><span class="key blue"></span><b>Blue — Lowest elevation.</b> The vast blue zones represent the deepest tidal channels and the lagoon floor.</p>
+              <p><span class="key green"></span><b>Green — Low-lying land.</b> Green areas sit just above sea level, where mangrove colonisation becomes possible.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </aside>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"><span class="tdot"></span><span id="toastMsg"></span></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/* ================= helpers ================= */
+const $=(s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
+const stage=$('#stage');
+
+/* ================= real basemap ================= */
+const stageMapEl=$('#stageMap');
+const mapStateLabel=$('#mapStateLabel');
+let stageMap, ndviOverlay, basemapOverlay, ndviBounds, currentNdviSrc='musiDEM.jpg', currentBasemapImgSrc='Untitled-1.jpg', demAreaLayer, demPointLayer, activeBasemapIndex=-1, activeKfIndex=0;
+let currentBasemapLabel='Google Maps · Standard', currentKfLabel='DEM · Recovery phase';
+let demFeatureHovered=false, demHoverLatLng=null;
+
+function renderMapStateLabel(){
+  if(!mapStateLabel)return;
+  mapStateLabel.textContent=currentBasemapLabel+' | '+currentKfLabel;
+}
+
+function placeDemAnchorAtLatLng(latlng){
+  if(!stageMap||!latlng)return;
+  const p=stageMap.latLngToContainerPoint(latlng);
+  const size=stageMap.getSize();
+  const x=Math.min(96,Math.max(4,(p.x/size.x)*100));
+  const y=Math.min(88,Math.max(8,(p.y/size.y)*100));
+  const anchorEl=$('#demAnchor');
+  if(anchorEl){anchorEl.style.left=x+'%';anchorEl.style.top=y+'%';}
+}
+
+if(stageMapEl&&typeof L!=='undefined'){
+  stageMap=L.map(stageMapEl,{zoomControl:false,attributionControl:true}).setView([24.541,54.483],11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(stageMap);
+  ndviBounds=L.latLngBounds([[24.267,54.098],[24.815,54.868]]);
+  basemapOverlay=L.imageOverlay(currentBasemapImgSrc,ndviBounds,{opacity:1,interactive:false,className:'basemap-img-overlay'}).addTo(stageMap);
+  ndviOverlay=L.imageOverlay(currentNdviSrc,ndviBounds,{opacity:1,interactive:false}).addTo(stageMap);
+  // Keep invisible interactive layers for hover/popover anchoring without showing circle visuals.
+  demAreaLayer=L.circle([24.541,54.483],{radius:6200,color:'transparent',weight:0,fillColor:'transparent',fillOpacity:0,interactive:true}).addTo(stageMap);
+  demPointLayer=L.circleMarker([24.541,54.483],{radius:6,color:'transparent',weight:0,fillColor:'transparent',fillOpacity:0,interactive:true}).addTo(stageMap);
+  [demAreaLayer,demPointLayer].forEach(layer=>{
+    layer.on('mouseover',e=>{
+      demFeatureHovered=true;
+      demHoverLatLng=e.latlng||demHoverLatLng;
+      placeDemAnchorAtLatLng(demHoverLatLng);
+      updateDemAnchorVisibility();
+    });
+    layer.on('mousemove',e=>{
+      demHoverLatLng=e.latlng||demHoverLatLng;
+      placeDemAnchorAtLatLng(demHoverLatLng);
+    });
+    layer.on('mouseout',()=>{
+      demFeatureHovered=false;
+      updateDemAnchorVisibility();
+    });
+  });
+  stageMap.on('move zoom',()=>{
+    if(demFeatureHovered&&demHoverLatLng)placeDemAnchorAtLatLng(demHoverLatLng);
+  });
+  setTimeout(()=>stageMap.invalidateSize(),0);
+  window.addEventListener('resize',()=>stageMap.invalidateSize());
+}
+
+let toastT;
+function toast(msg){const t=$('#toast');$('#toastMsg').textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+function dragXY(el,onMove){
+  el.addEventListener('pointerdown',e=>{
+    e.preventDefault();el.setPointerCapture(e.pointerId);
+    const mv=ev=>onMove(ev), up=()=>{el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);el.removeEventListener('pointercancel',up)};
+    el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);onMove(e);
+  });
+}
+
+/* ================= left rail ================= */
+$$('[data-rail]').forEach(b=>b.addEventListener('click',()=>{
+  $$('[data-rail]').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  toast(b.dataset.tip+' — opened');
+}));
+const projAvVideoSrc='Screen Recording 2026-06-10 at 12.09.05\u202fPM.mp4';
+const projAvVideo=document.createElement('video');
+projAvVideo.className='av-video';
+projAvVideo.muted=true;
+projAvVideo.loop=true;
+projAvVideo.autoplay=true;
+projAvVideo.playsInline=true;
+projAvVideo.preload='metadata';
+projAvVideo.src=projAvVideoSrc;
+function mountProjAvVideo(btn){
+  const host=btn?.querySelector('.av');
+  if(!host)return;
+  host.appendChild(projAvVideo);
+  const playPromise=projAvVideo.play();
+  if(playPromise&&typeof playPromise.catch==='function')playPromise.catch(()=>{});
+}
+mountProjAvVideo($('.proj-av.active'));
+$$('.proj-av').forEach(b=>b.addEventListener('click',()=>{
+  $$('.proj-av').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  mountProjAvVideo(b);
+  $('#projName').textContent=b.dataset.proj;
+  toast('Switched to project: '+b.dataset.proj);
+}));
+$('.bell').addEventListener('click',()=>toast('Notifications · 1 new alert — NDVI keyframe ready'));
+$('.me').addEventListener('click',()=>toast('Account · AZ — settings & billing'));
+
+/* ================= project card / tabs ================= */
+$('#projFold').addEventListener('click',()=>{
+  const c=$('#projCard');c.classList.toggle('folded');
+  toast(c.classList.contains('folded')?'Project card collapsed':'Project card expanded');
+});
+$('#backBtn').addEventListener('click',()=>toast('Back to project list'));
+$$('#tabs .tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('#tabs .tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+  const v=t.dataset.view;
+  $('#storyPanel').classList.toggle('hidden',v!=='story');
+  toast(v==='story'?'Story view':v.charAt(0).toUpperCase()+v.slice(1)+' view — outside this prototype');
+}));
+
+/* ================= DEM popup ================= */
+const opacity=$('#opacity');
+opacity.addEventListener('input',()=>{
+  opacity.style.setProperty('--fill',opacity.value+'%');
+  applyKfVisual(activeKfIndex);
+});
+let ndviVisible=true;
+function setNdvi(on){
+  ndviVisible=on;stage.classList.toggle('ndvi-off',!on);
+  if(ndviOverlay)ndviOverlay.setOpacity(on?opacity.value/100:0);
+  updateDemAnchorVisibility();
+  $('#eyeNdviUse').setAttribute('href',on?'#i-eye':'#i-eye-off');
+  $('#eyeNdvi').classList.toggle('on',on);
+  $('#demHideUse').setAttribute('href',on?'#i-eye-off':'#i-eye');
+  const mi=$('[data-layer="dem"]');mi&&mi.classList.toggle('on',on);
+}
+let splitOn=false;
+function setSplit(on){
+  splitOn=on;stage.classList.toggle('split-on',on);
+  $('#demSplit').classList.toggle('toggled',on);
+  $('#mtoolSplit').classList.toggle('toggled',on);
+  toast(on?'Split / reveal mode on — drag the divider':'Split mode off');
+}
+$$('.dem-actions .ibtn').forEach(b=>b.addEventListener('click',()=>{
+  const a=b.dataset.act;
+  if(a==='download')toast('Downloading DEM GeoTIFF… 84 MB');
+  else if(a==='reset'){opacity.value=100;opacity.dispatchEvent(new Event('input'));toast('DEM layer reset');}
+  else if(a==='zoomin'){pulseFit();toast('Zoomed to DEM extent');}
+  else if(a==='elev')toast('Elevation profile — draw a line on the map');
+  else if(a==='split')setSplit(!splitOn);
+  else if(a==='layers')toast('Layer stack — 2 layers active');
+  else if(a==='hide'){setNdvi(!ndviVisible);toast(ndviVisible?'DEM layer shown':'DEM layer hidden');}
+}));
+/* drag popup by its header */
+const anchor=$('#demAnchor');
+let overDemAnchor=false;
+function updateDemAnchorVisibility(){
+  const show=ndviVisible&&(demFeatureHovered||overDemAnchor);
+  anchor.classList.toggle('is-visible',show);
+}
+anchor.addEventListener('mouseenter',()=>{overDemAnchor=true;updateDemAnchorVisibility();});
+anchor.addEventListener('mouseleave',()=>{overDemAnchor=false;updateDemAnchorVisibility();});
+dragXY($('#demHead'),e=>{
+  const r=stage.getBoundingClientRect();
+  let x=((e.clientX-r.left)/r.width)*100, y=((e.clientY-r.top)/r.height)*100;
+  x=Math.min(82,Math.max(2,x-9)); y=Math.min(60,Math.max(2,y-2));
+  anchor.style.left=x+'%';anchor.style.top=y+'%';
+});
+
+/* ================= map tools / compass ================= */
+function pulseFit(){
+  if(stageMap&&ndviBounds){stageMap.flyToBounds(ndviBounds,{padding:[60,60],duration:.7});return;}
+}
+$$('.mtool').forEach(b=>b.addEventListener('click',()=>{
+  const m=b.dataset.mtool;
+  if(m==='split'){setSplit(!splitOn);return;}
+  const on=b.classList.toggle('toggled');
+  if(m==='fit'){b.classList.remove('toggled');pulseFit();toast('Fitted to area bounds');}
+  else if(m==='info')toast(on?'Pixel inspect on — click the map to sample':'Pixel inspect off');
+  else if(m==='measure')toast(on?'Measure tool on — click two points':'Measure tool off');
+}));
+let is3d=true;
+/* split divider drag */
+dragXY($('#splitGrip'),e=>{
+  const r=stage.getBoundingClientRect();
+  let p=((e.clientX-r.left)/r.width)*100;p=Math.min(92,Math.max(8,p));
+  stage.style.setProperty('--split',p+'%');
+});
+$('#minimap').addEventListener('click',()=>{pulseFit();toast('Recentred from overview map');});
+
+/* ================= timeline ================= */
+const rulers={
+  '1H':['09:00','09:15','09:30','09:45'],'6H':['06:00','10:00','14:00','18:00'],
+  '24H':['13 MAR','28 MAR','12 APR','27 APR'],'7D':['MON','WED','FRI','SUN'],
+  '30D':['W 1','W 2','W 3','W 4'],'YTD':['JAN','MAR','MAY','JUL'],'Custom':['13 MAR','28 MAR','12 APR','27 APR']};
+function setRuler(keys){
+  $('#ruler').innerHTML=keys.map((k,i)=>`<i style="left:${12.5+i*25}%">${k}</i>`).join('');
+}
+setRuler(rulers['24H']);
+$$('[data-range]').forEach(c=>c.addEventListener('click',()=>{
+  $$('[data-range]').forEach(x=>x.classList.remove('active'));c.classList.add('active');
+  setRuler(rulers[c.dataset.range]);
+  toast(c.dataset.range==='Custom'?'Custom range picker (prototype)':'Range: '+c.dataset.range);
+}));
+$('#panBtn').addEventListener('click',e=>{
+  e.target.classList.toggle('active');
+  toast(e.target.classList.contains('active')?'Pan mode on — drag the map':'Pan mode off');
+});
+
+/* basemap thumbs */
+const thumbDates=['14 Mar 2025','28 Mar 2025','12 Apr 2025','27 Apr 2025'];
+const thumbImages=['Untitled-1.jpg','Untitled-2.jpg','Untitled-3.jpg','Untitled-4.jpg'];
+const basemapFrames=[
+  {date:'14 Mar 2025',center:[24.541,54.483],zoom:11,filter:'saturate(.76) contrast(.92) brightness(.58)',tileOpacity:.95,label:'Google Maps · Standard'},
+  {date:'28 Mar 2025',center:[24.552,54.468],zoom:12,filter:'saturate(.92) contrast(1.02) brightness(.62)',tileOpacity:.88,label:'Google Maps · Vegetation'},
+  {date:'12 Apr 2025',center:[24.528,54.501],zoom:12,filter:'saturate(.68) contrast(1.08) brightness(.52)',tileOpacity:.82,label:'Google Maps · Relief'},
+  {date:'27 Apr 2025',center:[24.539,54.452],zoom:11,filter:'saturate(.82) contrast(.96) brightness(.6)',tileOpacity:.92,label:'Google Maps · Fresh'}
+];
+
+function applyBasemapFrame(index,animate=false){
+  const frame=basemapFrames[Math.max(0,Math.min(basemapFrames.length-1,index))];
+  if(!frame)return;
+  $('#basemapDate').textContent=frame.date+' ‹';
+  const currentDateLabel=$('#currentDateLabel');
+  if(currentDateLabel)currentDateLabel.textContent='Current date: '+frame.date;
+  currentBasemapLabel=frame.label;
+  renderMapStateLabel();
+  if(stageMap){
+    const tilePane=stageMapEl.querySelector('.leaflet-tile-pane');
+    if(tilePane){
+      tilePane.style.filter=frame.filter;
+      tilePane.style.opacity=String(frame.tileOpacity);
+    }
+  }
+  // swap basemap image overlay
+  const newSrc=thumbImages[Math.max(0,Math.min(thumbImages.length-1,index))];
+  if(basemapOverlay&&newSrc!==currentBasemapImgSrc){
+    basemapOverlay.setUrl(newSrc);
+    currentBasemapImgSrc=newSrc;
+  }
+  activeBasemapIndex=index;
+}
+
+const baseTrack=$('#tracks .track:not(.ndvi-track)');
+thumbDates.forEach((d,i)=>{
+  const b=document.createElement('button');b.className='thumb';b.style.left=(7+i*21.5)+'%';
+  b.setAttribute('data-tip',d);
+  const src=thumbImages[i];
+  b.innerHTML=`<img src="${src}" alt="Basemap thumbnail ${d}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" decoding="async">`;
+  b.addEventListener('click',()=>{applyBasemapFrame(i,true);toast('Basemap → '+d);});
+  baseTrack&&baseTrack.appendChild(b);
+});
+
+/* keyframes / playback */
+const kfs=$$('.kf');
+const playhead=$('#playhead');
+const tracksEl=$('#tracks');
+const ndviTimelineImages=['musiDEM.jpg','musiDEM2.jpg','musiDEM3.jpg'];
+const ndviFrames=kfs.map((k,i)=>({
+  idx:i,
+  pos:parseFloat(k.dataset.pos),
+  date:k.dataset.date||'',
+  src:ndviTimelineImages[Math.min(i,ndviTimelineImages.length-1)]
+}));
+
+const kfVisuals=[
+  {color:'#3ce8a6',fillOpacity:.09,weight:1,label:'DEM · Recovery phase',glow:'0 5px 14px rgba(60,232,166,.32)',overlayMul:.85},
+  {color:'#6ecbff',fillOpacity:.1,weight:1.4,label:'DEM · Mid-season change',glow:'0 5px 14px rgba(110,203,255,.32)',overlayMul:1},
+  {color:'#ffd76a',fillOpacity:.11,weight:1.8,label:'DEM · Peak uplift',glow:'0 5px 14px rgba(255,215,106,.35)',overlayMul:.75}
+];
+
+function applyKfVisual(index){
+  const v=kfVisuals[Math.max(0,Math.min(kfVisuals.length-1,index))];
+  if(!v)return;
+  activeKfIndex=index;
+  if(demAreaLayer)demAreaLayer.setStyle({color:'transparent',fillColor:'transparent',fillOpacity:0,weight:0});
+  if(demPointLayer)demPointLayer.setStyle({color:'transparent',fillColor:'transparent',fillOpacity:0,radius:6,weight:0});
+  if(ndviOverlay){
+    const baseOpacity=Number(opacity.value||100)/100;
+    ndviOverlay.setOpacity(ndviVisible?Math.min(1,baseOpacity*v.overlayMul):0);
+  }
+  if(mapStateLabel){
+    mapStateLabel.style.borderColor=v.color;
+    mapStateLabel.style.boxShadow=v.glow;
+    currentKfLabel=v.label;
+    renderMapStateLabel();
+  }
+}
+
+function getNdviFrameForPos(p){
+  if(!ndviFrames.length)return null;
+  let best=ndviFrames[0];
+  let bestDist=Math.abs(p-best.pos);
+  ndviFrames.forEach(frame=>{
+    const d=Math.abs(p-frame.pos);
+    if(d<bestDist){best=frame;bestDist=d;}
+  });
+  return best;
+}
+
+function syncNdviOverlayByPos(p){
+  const frame=getNdviFrameForPos(p);
+  if(!frame||!ndviOverlay)return;
+  if(frame.src!==currentNdviSrc){
+    ndviOverlay.setUrl(frame.src);
+    currentNdviSrc=frame.src;
+  }
+  applyKfVisual(frame.idx);
+}
+
+let pos=0,playing=false,raf=null,lastT=0;
+function setPos(p){pos=Math.max(0,Math.min(100,p));playhead.style.left=pos+'%';
+  kfs.forEach(k=>{k.classList.toggle('lit',Math.abs(parseFloat(k.dataset.pos)-pos)<2);});
+  const i=Math.min(thumbDates.length-1,Math.floor(pos/100*thumbDates.length));
+  if(i!==activeBasemapIndex)applyBasemapFrame(i,playing);
+  syncNdviOverlayByPos(pos);
+}
+kfs.forEach(k=>k.addEventListener('click',()=>{setPos(parseFloat(k.dataset.pos));toast('Keyframe · '+k.dataset.date);}));
+
+function getPosFromClientX(clientX){
+  const r=tracksEl.getBoundingClientRect();
+  return ((clientX-r.left)/r.width)*100;
+}
+
+let draggingPlayhead=false;
+function startPlayheadDrag(e){
+  if(e.button!==undefined&&e.button!==0)return;
+  draggingPlayhead=true;
+  stopPlay();
+  setPos(getPosFromClientX(e.clientX));
+  e.preventDefault();
+}
+
+playhead.addEventListener('pointerdown',startPlayheadDrag);
+tracksEl.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.kf,.thumb'))return;
+  startPlayheadDrag(e);
+});
+window.addEventListener('pointermove',e=>{
+  if(!draggingPlayhead)return;
+  setPos(getPosFromClientX(e.clientX));
+});
+window.addEventListener('pointerup',()=>{draggingPlayhead=false;});
+window.addEventListener('pointercancel',()=>{draggingPlayhead=false;});
+
+function tick(t){if(!playing)return;if(!lastT)lastT=t;const dt=t-lastT;lastT=t;
+  setPos(pos+dt/9000*100);
+  if(pos>=100){stopPlay();setPos(100);toast('Playback finished');return;}
+  raf=requestAnimationFrame(tick);}
+function startPlay(){playing=true;lastT=0;if(pos>=100)setPos(0);
+  $('#playBtn').classList.add('playing');$('#playUse').setAttribute('href','#i-pause');$('#playLbl').textContent='Pause';
+  raf=requestAnimationFrame(tick);}
+function stopPlay(){playing=false;cancelAnimationFrame(raf);
+  $('#playBtn').classList.remove('playing');$('#playUse').setAttribute('href','#i-play');$('#playLbl').textContent='Play';}
+$('#playBtn').addEventListener('click',()=>playing?stopPlay():startPlay());
+$('#prevK').addEventListener('click',()=>{const ps=kfs.map(k=>+k.dataset.pos).filter(p=>p<pos-1);setPos(ps.length?Math.max(...ps):0);});
+$('#nextK').addEventListener('click',()=>{const ps=kfs.map(k=>+k.dataset.pos).filter(p=>p>pos+1);setPos(ps.length?Math.min(...ps):100);});
+/* scrub by clicking tracks */
+tracksEl.addEventListener('click',e=>{
+  if(e.target.closest('.kf,.thumb'))return;
+  setPos(getPosFromClientX(e.clientX));
+});
+/* timeline zoom */
+let tlScale=1;
+function applyTl(){$('#tracks').style.setProperty('--tlw',(tlScale*100)+'%');}
+$('#tlPlus').addEventListener('click',()=>{tlScale=Math.min(3,tlScale+0.5);applyTl();toast('Timeline zoom ×'+tlScale.toFixed(1));});
+$('#tlMinus').addEventListener('click',()=>{tlScale=Math.max(1,tlScale-0.5);applyTl();toast('Timeline zoom ×'+tlScale.toFixed(1));});
+
+/* layer eyes */
+$('#eyeNdvi').addEventListener('click',()=>{setNdvi(!ndviVisible);toast(ndviVisible?'DEM layer shown':'DEM layer hidden');});
+let baseOn=true;
+$('#eyeBase').addEventListener('click',()=>{
+  baseOn=!baseOn;stage.classList.toggle('basemap-off',!baseOn);
+  $('#eyeBaseUse').setAttribute('href',baseOn?'#i-eye':'#i-eye-off');
+  $('#eyeBase').classList.toggle('on',baseOn);
+  if(basemapOverlay)basemapOverlay.setOpacity(baseOn?1:0);
+  toast(baseOn?'Basemap shown':'Basemap hidden');
+});
+$$('.dots-t').forEach(b=>b.addEventListener('click',()=>toast('Layer options — rename, style, export, remove')));
+$$('.layer-row .eye-t:not(#eyeNdvi):not(#eyeBase)').forEach(b=>b.addEventListener('click',()=>toast('Row collapsed (prototype)')));
+
+/* ===== layer drag-to-reorder ===== */
+(function(){
+  const labels=$('#tlLabels');
+  const tracksEl=$('#tracks');
+  // track[0] = basemap thumbs track, track[1] = DEM ndvi-track
+  // layer-row[0] = dem, layer-row[1] = basemap  (initial order)
+  let dragSrc=null;
+
+  function getTrackForLayer(layerKey){
+    return layerKey==='dem'
+      ? tracksEl.querySelector('.track.ndvi-track')
+      : tracksEl.querySelector('.track:not(.ndvi-track):not(.ruler)');
+  }
+
+  function syncTrackOrder(){
+    const rows=[...labels.querySelectorAll('.layer-row')];
+    // ruler stays first; then reorder the two tracks to match label order
+    const ruler=tracksEl.querySelector('#ruler');
+    const playhead=tracksEl.querySelector('#playhead');
+    rows.forEach(row=>{
+      const track=getTrackForLayer(row.dataset.layer);
+      if(track) tracksEl.insertBefore(track,playhead);
+    });
+  }
+
+  function updateLeafletOrder(){
+    const rows=[...labels.querySelectorAll('.layer-row')];
+    // rows[0] = topmost layer (highest z), rows[last] = bottom
+    // Leaflet uses bringToFront / bringToBack
+    rows.forEach((row,i)=>{
+      if(row.dataset.layer==='dem'&&ndviOverlay){
+        if(i===0) ndviOverlay.bringToFront(); else ndviOverlay.bringToBack();
+      }
+      if(row.dataset.layer==='basemap'&&basemapOverlay){
+        if(i===0) basemapOverlay.bringToFront(); else basemapOverlay.bringToBack();
+      }
+    });
+  }
+
+  labels.querySelectorAll('.layer-row').forEach(row=>{
+    row.addEventListener('dragstart',e=>{
+      // only start drag from the handle
+      if(!e.target.closest('.layer-drag-handle')){
+        e.preventDefault();return;
+      }
+      dragSrc=row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',row.dataset.layer);
+    });
+    row.addEventListener('dragend',()=>{
+      row.classList.remove('dragging');
+      labels.querySelectorAll('.layer-row').forEach(r=>r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover',e=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect='move';
+      if(dragSrc&&dragSrc!==row) row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if(!dragSrc||dragSrc===row)return;
+      // reorder: insert dragSrc before or after row based on position
+      const rows=[...labels.querySelectorAll('.layer-row')];
+      const srcIdx=rows.indexOf(dragSrc);
+      const tgtIdx=rows.indexOf(row);
+      if(srcIdx<tgtIdx) row.after(dragSrc); else row.before(dragSrc);
+      syncTrackOrder();
+      updateLeafletOrder();
+      toast('Layer order updated');
+    });
+  });
+})();
+
+/* add layers menu */
+const menu=$('#layersMenu');
+$('#addLayers').addEventListener('click',e=>{e.stopPropagation();menu.classList.toggle('open');});
+document.addEventListener('click',e=>{if(!e.target.closest('#layersMenu,#addLayers'))menu.classList.remove('open');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.classList.remove('open');stopPlay();}});
+$$('.menu-item').forEach(mi=>mi.addEventListener('click',()=>{
+  const l=mi.dataset.layer;
+  if(l==='dem'){
+    const on=!mi.classList.contains('on');
+    mi.classList.toggle('on',on);
+    setNdvi(on);
+    toast(on?'DEM layer added':'DEM layer removed');
+    return;
+  }
+  const on=mi.classList.toggle('on');
+  toast((on?'Added: ':'Removed: ')+mi.querySelector('.mi-t').firstChild.textContent.trim()+(on?' (mock layer)':''));
+}));
+
+/* reset */
+$('#resetBtn').addEventListener('click',()=>{
+  stopPlay();setPos(0);tlScale=1;applyTl();
+  opacity.value=100;opacity.dispatchEvent(new Event('input'));
+  setNdvi(true);if(splitOn)setSplit(false);
+  if(!is3d)$('#compass').click();
+  if(!baseOn)$('#eyeBase').click();
+  $$('[data-range]').forEach(x=>x.classList.toggle('active',x.dataset.range==='24H'));setRuler(rulers['24H']);
+  toast('View reset to defaults');
+});
+
+/* ================= story panel ================= */
+$('#copyCoords')?.addEventListener('click',async()=>{
+  const txt='44.507123, 40.182983';
+  try{await navigator.clipboard.writeText(txt);}catch(_){/* clipboard may be blocked in sandbox */}
+  toast('Coordinates copied');
+});
+$('#shareBtn')?.addEventListener('click',()=>toast('Share link created · expires in 30 days'));
+$('#copySection')?.addEventListener('click',()=>toast('Section link copied'));
+$$('.pico').forEach(b=>b.addEventListener('click',()=>{
+  const a=b.dataset.pico, panel=$('#storyPanel');
+  if(a==='close'){panel.classList.add('hidden');toast('Story closed — reopen via the Story tab');}
+  else if(a==='expand'){panel.classList.toggle('wide');toast(panel.classList.contains('wide')?'Panel expanded':'Panel restored');}
+  else if(a==='download')toast('Exporting story as PDF…');
+  else if(a==='send')toast('Sent to project channel');
+  else toast('More actions — duplicate, schedule, archive');
+}));
+
+/* slides */
+const slides=[
+ {t:'The canopy cover has increased by <b class="hl">12%</b>',
+  b:'<strong>Area name</strong> is extremely flat, low-lying coastal terrain — the vast dominance of blue and green shows that almost the entire area sits within just a few metres of sea level. This makes it highly vulnerable to tidal inundation, sea-level rise and storm surge — and confirms why precise elevation data at millimetre resolution is critical.'},
+ {t:'Standing biomass reached <b class="hl">145 t/ha</b> this season',
+  b:'Twelve months of monitoring show steady accumulation through spring, followed by a sharp gain after the May planting cycle. The trajectory now sits <strong>29% above the restoration baseline</strong>, with the strongest growth concentrated along the sheltered inner channels of the polygon.'},
+ {t:'Nursery habitat expanded by <b class="hl">8.5 ha</b>',
+  b:'As pioneer mangroves stabilise the sediment, tidal creeks are deepening and branching. The newly sheltered shallows now function as fish-nursery habitat — an <strong>8% quarter-on-quarter gain</strong> in usable land cover across the monitored area.'}
+];
+const dotsWrap=$('#dots');
+const spScroll=$('.sp-scroll');
+const sectionLabels=['Story text','Mangrove sankey','Area classification','Habitat health','Data updates','Biomass growth','DEM compare'];
+const sections=$$('[data-section]',spScroll);
+const NDOTS=sections.length;
+const dotEls=[];
+for(let i=0;i<NDOTS;i++){
+  const d=document.createElement('button');
+  d.className='dot'+(i===0?' active':'');
+  d.setAttribute('aria-label',sectionLabels[i]||('Section '+(i+1)));
+  d.setAttribute('data-tip',sectionLabels[i]||('Section '+(i+1)));
+  d.addEventListener('click',()=>{
+    sections[i].scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  dotsWrap.appendChild(d);
+  dotEls.push(d);
+}
+
+function activateDot(idx){
+  dotEls.forEach((d,i)=>d.classList.toggle('active',i===idx));
+  // update slide text for story section
+  if(idx===0){
+    const s=slides[0],w=$('#slideWrap');
+    w.classList.add('out');
+    setTimeout(()=>{$('#slideTitle').innerHTML=s.t;$('#slideBody').innerHTML=s.b;w.classList.remove('out');},220);
+  }
+}
+
+function updateDots(){
+  const scrollTop=spScroll.scrollTop;
+  // at the very bottom → always activate last section
+  if(spScroll.scrollHeight-scrollTop-spScroll.clientHeight<8){
+    activateDot(sections.length-1);return;
+  }
+  const mid=scrollTop+spScroll.clientHeight*0.2;
+  const scrollRect=spScroll.getBoundingClientRect();
+  let best=0;
+  sections.forEach((s,i)=>{
+    const sTop=s.getBoundingClientRect().top-scrollRect.top+scrollTop;
+    if(sTop<=mid)best=i;
+  });
+  activateDot(best);
+}
+spScroll.addEventListener('scroll',updateDots,{passive:true});
+updateDots(); // initial state
+$('#slideBody').innerHTML=slides[0].b;
+
+/* info icons */
+$$('.info-i,[data-info]').forEach(el=>el.addEventListener('click',e=>{
+  e.stopPropagation();const m=el.dataset.info||el.closest('[data-info]')?.dataset.info;
+  if(m)toast(m);
+}));
+
+/* ================= sankey chart ================= */
+(function(){
+  const canvas=$('#sankeyChart');
+  if(!canvas)return;
+  const W=420,H=200;
+  const dpr=Math.max(1,window.devicePixelRatio||1);
+  canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  const T=46,SC=1.28; // top offset, scale (1 unit = SC px)
+  const st=[
+    {x:18,w:7,label:['Propagules','planted'],v:100},
+    {x:106,w:7,label:['Established'],v:72},
+    {x:178,w:7,label:['Seedling'],v:55},
+    {x:246,w:7,label:['Sapling'],v:43},
+    {x:306,w:7,label:['Young','tree'],v:38},
+    {x:374,w:7,label:['Mature','canopy'],v:34},
+  ];
+  const lossDef=[
+    [{n:'Desiccation / heat',v:18,c:'rgba(218,82,52,.62)'},{n:'Tidal washout',v:10,c:'rgba(182,100,46,.55)'}],
+    [{n:'Crab predation',v:9,c:'rgba(206,72,55,.6)'},{n:'Sediment burial',v:5,c:'rgba(160,90,50,.53)'},{n:'Storm / wave damage',v:3,c:'rgba(142,108,52,.46)'}],
+    [{n:'Competition / shade',v:5,c:'rgba(198,74,56,.55)'},{n:'Disease',v:4,c:'rgba(164,86,50,.49)'},{n:'',v:3,c:'rgba(148,96,52,.43)'}],
+    [{n:'Drought stress',v:2,c:'rgba(210,66,50,.56)'},{n:'Hydrology change',v:2,c:'rgba(178,86,46,.50)'},{n:'',v:1,c:'rgba(150,96,50,.42)'}],
+    [{n:'Late mc',v:2,c:'rgba(196,72,52,.54)'},{n:'',v:2,c:'rgba(162,88,48,.46)'}],
+  ];
+  const B=i=>T+st[i].v*SC;
+
+  // dark card background
+  ctx.fillStyle='#0d1511';
+  ctx.fillRect(0,0,W,H);
+
+  // title row
+  ctx.fillStyle='#3ce8a6';
+  ctx.beginPath();ctx.arc(16,17,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e8f4f0';ctx.font='600 11.5px "Inter Tight",sans-serif';ctx.textAlign='left';
+  ctx.fillText('Total mangrove survived',28,21);
+
+  for(let i=0;i<st.length-1;i++){
+    const x0=st[i].x+st[i].w/2, x1=st[i+1].x-st[i+1].w/2;
+    const mx=(x0+x1)/2, b1=B(i+1), b0=B(i);
+
+    // green surviving band (top-aligned, narrows at each stage)
+    const gg=ctx.createLinearGradient(x0,0,x1,0);
+    gg.addColorStop(0,'rgba(60,232,166,.56)');gg.addColorStop(1,'rgba(48,208,148,.50)');
+    ctx.beginPath();
+    ctx.moveTo(x0,T);ctx.bezierCurveTo(mx,T,mx,T,x1,T);
+    ctx.lineTo(x1,b1);ctx.bezierCurveTo(mx,b1,mx,b1,x0,b1);
+    ctx.closePath();ctx.fillStyle=gg;ctx.fill();
+
+    // loss flows (exit from bottom of surviving area, fan downward)
+    let ly=b1;
+    for(let j=0;j<lossDef[i].length;j++){
+      const ld=lossDef[i][j];
+      const lh=ld.v*SC;
+      const drop=14+j*10;
+      const ly1=ly+drop, ly1b=Math.min(H+10,ly+lh+drop+4);
+      const lfg=ctx.createLinearGradient(0,ly,0,Math.min(H,ly1b));
+      lfg.addColorStop(0,ld.c);lfg.addColorStop(0.55,ld.c);
+      lfg.addColorStop(1,ld.c.replace(/[\d.]+\)$/,'0)'));
+      ctx.beginPath();
+      ctx.moveTo(x0,ly);ctx.bezierCurveTo(mx,ly+drop*0.5,mx,ly1,x1,ly1);
+      ctx.lineTo(x1,ly1b);ctx.bezierCurveTo(mx,ly+lh+drop*0.6,mx,ly+lh,x0,ly+lh);
+      ctx.closePath();ctx.fillStyle=lfg;ctx.fill();
+      if(ld.n){
+        const tx=x0+(x1-x0)*0.38, ty=Math.min(H-4,(ly+(ly+lh))/2+drop*0.45);
+        ctx.font='8.5px "Inter Tight",sans-serif';
+        ctx.fillStyle='rgba(215,165,148,.72)';ctx.textAlign='center';
+        ctx.fillText(ld.n,tx,ty);
+      }
+      ly+=lh;
+    }
+  }
+
+  // stage nodes on top
+  for(let i=0;i<st.length;i++){
+    const s=st[i];
+    const ng=ctx.createLinearGradient(0,T,0,B(i));
+    ng.addColorStop(0,'#3ce8a6');ng.addColorStop(1,'rgba(38,190,125,.68)');
+    ctx.fillStyle=ng;ctx.fillRect(s.x-s.w/2,T,s.w,s.v*SC);
+    ctx.font='9px "Inter Tight",sans-serif';ctx.fillStyle='rgba(190,218,205,.74)';ctx.textAlign='center';
+    s.label.forEach((l,li)=>ctx.fillText(l,s.x,T-4-(s.label.length-1-li)*10));
+  }
+})();
+
+/* ================= area classification chart ================= */
+(function(){
+  const canvas=$('#areaChart');
+  if(!canvas)return;
+  const W=420,H=155;
+  const dpr=Math.max(1,window.devicePixelRatio||1);
+  canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  const BAR_W=58, BAR_H=108, BAR_T=8;
+  const cols=[{x:38,label:'Feb 2026'},{x:190,label:'Jul 2026'},{x:342,label:'Sep 2026'}];
+  // proportions [bareground, water, vegetation] at each time point
+  const props=[[0.34,0.30,0.36],[0.26,0.22,0.52],[0.20,0.18,0.62]];
+  const clrs=['#2d6645','#3a8a5c','#3ce8a6'];
+  const changes=[['','',''],['−8%','−8%','+8%'],['−8%','−8%','+8%']];
+  const labels=['4.53 ha','4.53 ha','4.53 ha'];
+
+  function barY(ci,band){ // top y of band in column ci
+    let y=BAR_T;
+    for(let b=0;b<band;b++) y+=props[ci][b]*BAR_H;
+    return y;
+  }
+
+  // draw flow bands between column pairs
+  for(let ci=0;ci<cols.length-1;ci++){
+    const x0=cols[ci].x+BAR_W, x1=cols[ci+1].x;
+    const mx=(x0+x1)/2;
+    for(let band=0;band<3;band++){
+      const y0t=barY(ci,band), y0b=y0t+props[ci][band]*BAR_H;
+      const y1t=barY(ci+1,band), y1b=y1t+props[ci+1][band]*BAR_H;
+      const fg=ctx.createLinearGradient(x0,0,x1,0);
+      fg.addColorStop(0,clrs[band]+'cc');fg.addColorStop(1,clrs[band]+'88');
+      ctx.beginPath();
+      ctx.moveTo(x0,y0t);ctx.bezierCurveTo(mx,y0t,mx,y1t,x1,y1t);
+      ctx.lineTo(x1,y1b);ctx.bezierCurveTo(mx,y1b,mx,y0b,x0,y0b);
+      ctx.closePath();ctx.fillStyle=fg;ctx.fill();
+    }
+  }
+
+  // draw bars and labels
+  for(let ci=0;ci<cols.length;ci++){
+    const cx=cols[ci].x;
+    let yOff=BAR_T;
+    for(let band=0;band<3;band++){
+      const bh=props[ci][band]*BAR_H;
+      ctx.fillStyle=clrs[band];
+      ctx.fillRect(cx,yOff,BAR_W,bh);
+      yOff+=bh;
+    }
+    // date label below bar
+    ctx.font='10.5px "Inter Tight",sans-serif';ctx.fillStyle='rgba(140,170,155,.6)';ctx.textAlign='center';
+    ctx.fillText(cols[ci].label,cx+BAR_W/2,BAR_T+BAR_H+15);
+
+    // ha label on left of first column
+    if(ci===0){
+      for(let band=0;band<3;band++){
+        const midY=barY(ci,band)+props[ci][band]*BAR_H/2;
+        ctx.font='10px "Inter Tight",sans-serif';ctx.fillStyle='rgba(220,240,232,.8)';ctx.textAlign='right';
+        ctx.fillText('4.53 ha',cx-5,midY+3.5);
+      }
+    }
+
+    // change badge on last two columns
+    if(ci>0){
+      for(let band=0;band<3;band++){
+        const midY=barY(ci,band)+props[ci][band]*BAR_H/2;
+        const ch=changes[ci][band];
+        if(!ch)continue;
+        const isPos=ch.startsWith('+');
+        const bw=34,bh2=16,bx=cx+BAR_W+4,by=midY-bh2/2;
+        ctx.fillStyle=isPos?'rgba(11,30,20,.88)':'rgba(30,12,12,.88)';
+        ctx.beginPath();if(ctx.roundRect)ctx.roundRect(bx,by,bw,bh2,4);else ctx.rect(bx,by,bw,bh2);ctx.fill();
+        ctx.strokeStyle=isPos?'rgba(60,232,166,.35)':'rgba(220,80,60,.35)';ctx.lineWidth=1;ctx.stroke();
+        ctx.fillStyle=isPos?'#3ce8a6':'#e05040';
+        ctx.font='bold 9.5px "JetBrains Mono",monospace';ctx.textAlign='center';
+        ctx.fillText(ch,bx+bw/2,by+11.5);
+      }
+    }
+  }
+})();
+
+/* ================= radar chart ================= */
+(function(){
+  const canvas=$('#radarChart');
+  if(!canvas)return;
+  const W=230,H=190;
+  const dpr=Math.max(1,window.devicePixelRatio||1);
+  canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  const cx=W/2+8, cy=H/2+4, R=68;
+  const axes=[
+    {label:'Water Quality',v:78},
+    {label:'Biodiversity',v:55},
+    {label:'Vegetation',v:68},
+    {label:'Soil Health',v:48},
+    {label:'Air Quality',v:62},
+  ];
+  const N=axes.length;
+  const ang=i=>-Math.PI/2+(2*Math.PI/N)*i;
+  const pt=(i,r)=>[cx+r*Math.cos(ang(i)), cy+r*Math.sin(ang(i))];
+
+  // grid rings
+  [25,50,75,100].forEach((pct,gi)=>{
+    const r=R*(pct/100);
+    ctx.beginPath();
+    for(let i=0;i<N;i++){const [x,y]=pt(i,r);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.closePath();
+    ctx.strokeStyle=gi===3?'rgba(60,232,166,.18)':'rgba(255,255,255,.07)';
+    ctx.lineWidth=1;ctx.stroke();
+    // ring label
+    ctx.font='8.5px "JetBrains Mono",monospace';ctx.fillStyle='rgba(130,160,145,.45)';ctx.textAlign='center';
+    ctx.fillText(String(pct),cx+3,cy-r+3.5);
+  });
+
+  // axis lines
+  for(let i=0;i<N;i++){
+    const [x,y]=pt(i,R);
+    ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();
+  }
+
+  // data polygon fill
+  ctx.beginPath();
+  for(let i=0;i<N;i++){const [x,y]=pt(i,R*axes[i].v/100);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.closePath();
+  const fg=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
+  fg.addColorStop(0,'rgba(60,232,166,.38)');fg.addColorStop(1,'rgba(40,180,140,.12)');
+  ctx.fillStyle=fg;ctx.fill();
+  ctx.strokeStyle='rgba(60,232,166,.7)';ctx.lineWidth=1.5;ctx.stroke();
+
+  // data dots
+  for(let i=0;i<N;i++){
+    const [x,y]=pt(i,R*axes[i].v/100);
+    ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle='#3ce8a6';ctx.fill();
+    ctx.strokeStyle='#0c1912';ctx.lineWidth=1.5;ctx.stroke();
+  }
+
+  // axis labels
+  ctx.font='10px "Inter Tight",sans-serif';ctx.fillStyle='rgba(195,220,210,.8)';
+  axes.forEach((ax,i)=>{
+    const [x,y]=pt(i,R+16);
+    const offX=i===0||i===4?-2:i===1?2:i===2?2:-2;
+    ctx.textAlign=i===0?'center':x>cx+5?'left':x<cx-5?'right':'center';
+    ctx.fillText(ax.label,x+offX,y+(i===0?-2:i>=3?4:0));
+  });
+})();
+
+/* ================= bubble chart ================= */
+(function(){
+  const canvas=$('#bubbleChart');
+  if(!canvas)return;
+  const W=420,H=185;
+  const dpr=Math.max(1,window.devicePixelRatio||1);
+  canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  const L=108,R=14,T=8,B=32;
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
+  const mLabels=[0,2,4,5,8,10]; // Jan,Mar,May,Jun,Sep,Nov
+  const projNames=['Long_project_name_1','Long_project_name_2','Project 3','Project 4','Project 5'];
+  const projClrs=['rgba(74,144,217,.82)','rgba(196,146,26,.82)','rgba(192,64,128,.82)','rgba(60,184,166,.82)','rgba(196,188,32,.82)'];
+  const rows=5;
+  const rowH=(H-T-B)/rows;
+
+  // X mapper: month index → canvas x
+  const mX=m=>L+m*(W-L-R)/10;
+  // Row Y: row → canvas y center
+  const rY=r=>T+r*rowH+rowH/2;
+
+  // bubbles: [row, month(0-10), radius(px)]
+  const bubbles=[
+    // proj 0 (blue) - dense Jan–Jun
+    [0,0,7],[0,0,9],[0,1,8],[0,1,6],[0,2,9],[0,2,7],[0,3,11],[0,4,8],[0,5,9],[0,6,7],[0,7,6],[0,8,8],[0,9,7],[0,10,6],
+    // proj 1 (gold) - medium-large clusters
+    [1,0,11],[1,0,9],[1,1,13],[1,1,10],[1,2,15],[1,2,11],[1,3,17],[1,4,13],[1,4,10],[1,5,14],[1,6,11],[1,7,10],[1,8,9],[1,9,8],[1,10,7],
+    // proj 2 (pink) - sparse medium
+    [2,1,7],[2,3,9],[2,4,11],[2,5,8],[2,6,7],[2,7,6],[2,8,7],[2,9,8],[2,10,7],
+    // proj 3 (teal) - heavy Sep–Nov
+    [3,3,6],[3,5,7],[3,7,9],[3,8,13],[3,9,11],[3,10,15],
+    // proj 4 (yellow) - scattered
+    [4,0,7],[4,1,8],[4,2,6],[4,3,9],[4,4,7],[4,5,8],[4,6,6],[4,7,7],[4,8,8],[4,9,9],[4,10,10],
+  ];
+
+  // project name labels on left
+  ctx.font='10px "Inter Tight",sans-serif';ctx.fillStyle='rgba(140,165,155,.65)';ctx.textAlign='right';
+  projNames.forEach((n,r)=>ctx.fillText(n,L-6,rY(r)+3.5));
+
+  // month labels on bottom
+  ctx.font='10.5px "Inter Tight",sans-serif';ctx.fillStyle='rgba(130,158,148,.55)';ctx.textAlign='center';
+  mLabels.forEach(m=>ctx.fillText(months[m],mX(m),H-B+16));
+
+  // subtle grid lines
+  mLabels.forEach(m=>{
+    ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(mX(m),T);ctx.lineTo(mX(m),H-B);ctx.stroke();
+  });
+
+  // bubbles
+  bubbles.forEach(([r,m,rad])=>{
+    const x=mX(m), y=rY(r);
+    ctx.beginPath();ctx.arc(x,y,rad,0,Math.PI*2);
+    ctx.fillStyle=projClrs[r];ctx.fill();
+    // subtle highlight
+    ctx.beginPath();ctx.arc(x-rad*0.25,y-rad*0.3,rad*0.35,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,.15)';ctx.fill();
+  });
+})();
+
+/* ================= biomass chart ================= */
+(function(){
+  const canvas=$('#biomassChart');
+  if(!canvas)return;
+  const data=[40,46,50,56,60,63,68,86,104,152,138,145];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const W=420, H=240, L=52, R=20, T=24, B=40, maxV=180;
+  const dpr=Math.max(1,window.devicePixelRatio||1);
+  canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  // hover: vertical cursor line + snap dot + tooltip
+  const tip=$('#chartTip');
+  canvas.addEventListener('pointermove',(e)=>{
+    const r=canvas.getBoundingClientRect();
+    const sx=(e.clientX-r.left)*(W/r.width);
+    let idx=Math.round((sx-L)/((W-L-R)/(data.length-1)));
+    idx=Math.max(0,Math.min(data.length-1,idx));
+    // redraw with hover state
+    ctx.clearRect(0,0,W,H);
+    drawChart(ctx,data,months,W,H,L,R,T,B,maxV,idx);
+    if(tip){
+      const x=L+idx*(W-L-R)/(data.length-1);
+      const y=T+(1-data[idx]/maxV)*(H-T-B);
+      tip.style.left=(x/W*100)+'%';
+      tip.style.top=(y/H*100)+'%';
+      tip.innerHTML=`<span style="color:rgba(130,160,150,.7);margin-right:5px">${months[idx]}</span><b>${data[idx]} t/ha</b>`;
+      tip.style.opacity='1';
+    }
+  });
+  canvas.addEventListener('pointerleave',()=>{
+    ctx.clearRect(0,0,W,H);
+    drawChart(ctx,data,months,W,H,L,R,T,B,maxV,-1);
+    if(tip)tip.style.opacity='0';
+  });
+
+  function drawChart(ctx,data,months,W,H,L,R,T,B,maxV,hoverIdx){
+    const X=i=>L+i*(W-L-R)/(data.length-1);
+    const Y=v=>T+(1-v/maxV)*(H-T-B);
+    const pts=data.map((v,i)=>[X(i),Y(v)]);
+    function spline(ctx,pts){
+      ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+      for(let i=0;i<pts.length-1;i++){
+        const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+        ctx.bezierCurveTo(p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6,p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6,p2[0],p2[1]);
+      }
+    }
+    // grid bands
+    [0,80].forEach(v=>{ctx.fillStyle='rgba(255,255,255,0.016)';ctx.fillRect(L,Y(v+40),W-L-R,Y(v)-Y(v+40));});
+    // dashed grid lines
+    ctx.save();ctx.setLineDash([3,6]);ctx.lineWidth=1;
+    [0,40,80,120,160].forEach(v=>{ctx.strokeStyle='rgba(60,232,166,0.1)';ctx.beginPath();ctx.moveTo(L,Y(v));ctx.lineTo(W-R,Y(v));ctx.stroke();});
+    ctx.restore();
+    // Y labels
+    ctx.font='bold 10px JetBrains Mono,monospace';ctx.textAlign='right';
+    [0,40,80,120,160].forEach(v=>{ctx.fillStyle=v===160?'rgba(60,232,166,.7)':'rgba(130,158,148,.5)';ctx.fillText(String(v),L-10,Y(v)+3.5);});
+    // Y unit
+    ctx.save();ctx.translate(13,H/2);ctx.rotate(-Math.PI/2);ctx.fillStyle='rgba(110,140,130,.4)';ctx.font='9.5px Inter Tight,sans-serif';ctx.textAlign='center';ctx.fillText('t / ha',0,0);ctx.restore();
+    // X labels
+    months.forEach((m,i)=>{ctx.fillStyle='rgba(100,130,120,.28)';ctx.fillRect(X(i),H-B+4,1,5);if([0,2,4,6,8,10,11].includes(i)){ctx.font=(i===11?'bold ':'')+' 10px Inter Tight,sans-serif';ctx.fillStyle=i===11?'rgba(60,232,166,.65)':'rgba(125,150,142,.55)';ctx.textAlign='center';ctx.fillText(m,X(i),H-B+18);}});
+    // area fill
+    const g=ctx.createLinearGradient(0,T,0,H-B);g.addColorStop(0,'rgba(60,232,166,0.2)');g.addColorStop(0.55,'rgba(60,232,166,0.07)');g.addColorStop(1,'rgba(60,232,166,0)');
+    spline(ctx,pts);ctx.lineTo(X(data.length-1),H-B);ctx.lineTo(X(0),H-B);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+    // glow
+    ctx.save();ctx.shadowColor='rgba(60,232,166,0.5)';ctx.shadowBlur=16;spline(ctx,pts);ctx.strokeStyle='rgba(60,232,166,0.3)';ctx.lineWidth=7;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();ctx.restore();
+    // line
+    spline(ctx,pts);ctx.strokeStyle='#3ce8a6';ctx.lineWidth=2.2;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+    // dots
+    pts.forEach(([x,y],i)=>{const last=i===data.length-1;ctx.beginPath();ctx.arc(x,y,last?5:2.8,0,Math.PI*2);ctx.fillStyle=last?'#3ce8a6':'rgba(60,232,166,.72)';ctx.fill();ctx.lineWidth=last?2.2:1.5;ctx.strokeStyle='#0c1912';ctx.stroke();if(last){ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.strokeStyle='rgba(60,232,166,0.2)';ctx.lineWidth=2;ctx.stroke();}});
+    // peak callout
+    const px=X(data.length-1),py=Y(data[data.length-1]),lw=64,lh=20,lx=px-lw-8,ly=py-lh/2;
+    ctx.fillStyle='rgba(8,18,14,0.92)';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(lx,ly,lw,lh,5);else ctx.rect(lx,ly,lw,lh);ctx.fill();ctx.strokeStyle='rgba(60,232,166,0.38)';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#3ce8a6';ctx.font='bold 11px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('145 t/ha',lx+lw/2,ly+13.5);
+    // hover cursor line + snap dot
+    if(hoverIdx>=0){
+      const hx=X(hoverIdx),hy=Y(data[hoverIdx]);
+      ctx.save();ctx.strokeStyle='rgba(60,232,166,0.5)';ctx.lineWidth=1;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(hx,T);ctx.lineTo(hx,H-B);ctx.stroke();ctx.restore();
+      ctx.beginPath();ctx.arc(hx,hy,5,0,Math.PI*2);ctx.fillStyle='#3ce8a6';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#0c1912';ctx.stroke();
+      ctx.save();ctx.shadowColor='rgba(60,232,166,0.6)';ctx.shadowBlur=10;ctx.beginPath();ctx.arc(hx,hy,5,0,Math.PI*2);ctx.fillStyle='#3ce8a6';ctx.fill();ctx.restore();
+    }
+  }
+
+  drawChart(ctx,data,months,W,H,L,R,T,B,maxV,-1);
+})();
+
+/* ================= DEM compare ================= */
+const cmp=$('#cmp');
+function cmpMove(e){const r=cmp.getBoundingClientRect();
+  let p=((e.clientX-r.left)/r.width)*100;p=Math.min(96,Math.max(4,p));cmp.style.setProperty('--pos',p+'%');}
+dragXY($('#cmpGrip'),cmpMove);
+dragXY(cmp,e=>{if(e.target.closest('.cmp-tag'))return;cmpMove(e);});
+$$('.cmp-tag').forEach(t=>t.addEventListener('click',e=>{e.stopPropagation();toast('Opening '+t.dataset.dem+' in Exploration');}));
+
+/* init */
+setPos(0);
+console.log('%cnabat · GIS story prototype','color:#3ce8a6;font-weight:600');
+</script>
+</body>
+</html>
