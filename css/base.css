@@ -1,0 +1,23 @@
+/* ════ FILE: css/base.css — reset & foundation ════ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--font-ui); font-size:13.5px; line-height:1.45;
+  overflow:hidden; min-width:1180px;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-radius:6px}
+button:not(:disabled):active{transform:scale(.96)}
+::selection{background:rgba(60,232,166,.28)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background:rgba(60,232,166,.3)}
+::-webkit-scrollbar-track{background:transparent}
+.icon{width:17px;height:17px;flex:0 0 auto}
+.icon.sm{width:13px;height:13px}
+.icon.xs{width:11px;height:11px}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.001s !important}
+}

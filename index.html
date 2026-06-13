@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>nabat — Story · GIS prototype · AURORA build</title>
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  NABAT · GIS STORY PROTOTYPE — v2 "AURORA"
+  Single-file build, structured for mechanical decomposition.
+
+  DECOMPOSITION MAP — every ‹style› / ‹script› tag carries a data-file
+  attribute. To split this build into a real project, copy each tag's
+  contents into the file named by its data-file attribute, in this order:
+
+    css/tokens.css        design tokens (colors, radii, easings, shadows)
+    css/base.css          reset, scrollbars, focus, typography base
+    css/animations.css    the full @keyframes library (shared)
+    css/layout.css        app frame, left rail, stage scaffolding
+    css/map.css           leaflet skin, atmosphere, VFX layers, split view
+    css/panels.css        glass system, project card, tabs, DEM popup,
+                          map tools, minimap, HUD, VFX control panel
+    css/timeline.css      bottom timeline, tracks, keyframes, playhead
+    css/story.css         right story panel + widget cards
+    css/ui-kit.css        tooltips, toast, switches, reveal utilities
+
+    js/core/core.js       NB namespace, helpers, event bus, easings, RNG
+    js/core/reveal.js     IntersectionObserver reveals + count-up numbers
+    js/map/map.js         Leaflet init, procedural texture factory, layers
+    js/vfx/vfx.js         VFX engine (canvas), effects, control panel
+    js/ui/ui.js           rail, project card, tabs, HUD, DEM popup, tools
+    js/ui/timeline.js     playback, keyframes, layer rows, drag-reorder
+    js/ui/story.js        story panel, dots, slides, card tilt
+    js/charts/charts.js   animated chart registry + the five widgets
+    js/main.js            boot sequence + init order
+
+  CONVENTIONS
+  · All modules attach to the single global `NB` and talk via NB.bus only.
+  · No cross-tag closures: each ‹script› tag is a self-contained IIFE.
+  · Procedural textures replace local image assets so the file runs
+    anywhere; flip NB.map CFG.procedural=false to use real GeoTIFF/JPG
+    exports again (paths preserved in CFG.assets).
+═══════════════════════════════════════════════════════════════════════════════
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="">
+<link rel="stylesheet" href="css/tokens.css">
+
+<link rel="stylesheet" href="css/base.css">
+
+<link rel="stylesheet" href="css/animations.css">
+
+<link rel="stylesheet" href="css/layout.css">
+
+<link rel="stylesheet" href="css/map.css">
+
+<link rel="stylesheet" href="css/panels.css">
+
+<link rel="stylesheet" href="css/timeline.css">
+
+<link rel="stylesheet" href="css/layer-panel.css">
+
+<link rel="stylesheet" href="css/story.css">
+
+<link rel="stylesheet" href="css/ui-kit.css">
+</head>
+<body>
+
+<!-- SVG icon sprite + filters (injected by icons component) -->
+<div id="nb-icons"></div>
+
+<div class="app">
+  <!-- Left navigation rail -->
+  <div id="nb-rail"></div>
+
+  <main class="stage fx-aurora fx-grain" id="stage">
+    <!-- Map canvases — stay here so map.js can init them immediately -->
+    <div class="map-real" id="stageMap" aria-hidden="true"></div>
+
+    <!-- Atmospheric background layers (sea, aurora, grain, etc.) -->
+    <div id="nb-map-bg"></div>
+
+    <!-- Split / reveal bar -->
+    <div id="nb-split-bar"></div>
+
+    <!-- DEM floating popup -->
+    <div id="nb-dem-popup"></div>
+
+    <!-- Project card + view tabs + mission HUD -->
+    <div id="nb-project-card"></div>
+
+    <!-- Left map tools strip -->
+    <div id="nb-map-tools"></div>
+
+    <!-- Compass controller (draggable) -->
+    <div id="nb-camera-3d"></div>
+
+    <!-- VFX control panel -->
+    <div id="nb-vfx-panel"></div>
+
+    <!-- Minimap overview -->
+    <div id="nb-minimap"></div>
+
+    <!-- Timeline bar -->
+    <div id="nb-timeline"></div>
+
+    <!-- Story panel -->
+    <div id="nb-story-panel"></div>
+  </main>
+</div>
+
+<!-- Toast notification -->
+<div id="nb-toast"></div>
+
+<!-- Boot splash -->
+<div id="nb-boot"></div>
+
+
+<!-- ── CDN libraries ────────────────────────────────────────────────────── -->
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin=""></script>
+
+<!-- ── Core utilities (must load before components) ─────────────────────── -->
+<script src="js/core/core.js"></script>
+<script src="js/core/reveal.js"></script>
+
+<!-- ── Components — mount HTML templates into DOM mount points ──────────── -->
+<script src="js/components/icons.js"></script>
+<script src="js/components/rail.js"></script>
+<script src="js/components/map-bg.js"></script>
+<script src="js/components/split-bar.js"></script>
+<script src="js/components/dem-popup.js"></script>
+<script src="js/components/project-card.js"></script>
+<script src="js/components/map-tools.js"></script>
+<script src="js/components/camera-3d.js"></script>
+<script src="js/components/vfx-panel.js"></script>
+<script src="js/components/minimap.js"></script>
+<script src="js/components/timeline.js"></script>
+<script src="js/components/story-panel.js"></script>
+<script src="js/components/toast.js"></script>
+<script src="js/components/boot.js"></script>
+
+<!-- ── Logic / behaviour modules — bind to the now-mounted DOM ──────────── -->
+<script src="js/map/map.js"></script>
+<script src="js/vfx/vfx.js"></script>
+<script src="js/ui/ui.js"></script>
+<script src="js/ui/layer-panel.js"></script>
+<script src="js/ui/timeline.js"></script>
+<script src="js/ui/story.js"></script>
+<script src="js/charts/charts.js"></script>
+<script src="js/charts/charts2.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+/* ════ FILE: css/layout.css — app frame, rail, stage scaffolding ════ */
+.app{display:flex;height:100vh}
+
+/* ---- left rail ---- */
+.rail{
+  width:58px;flex:0 0 58px;background:linear-gradient(180deg,#081009,#060b09 60%,#070d0c);
+  border-right:1px solid rgba(255,255,255,.05);
+  display:flex;flex-direction:column;align-items:center;padding:10px 0 12px;gap:8px;z-index:60;
+  box-shadow:inset -1px 0 0 rgba(60,232,166,.04);
+}
+.logo{width:32px;height:32px;border-radius:9px;background:#11231b;color:var(--mint);
+  display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:17px;margin-bottom:6px;
+  animation:logoBreath 5s ease-in-out infinite}
+.rail-btn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--text-3);
+  transition:background var(--dur-1),color var(--dur-1),box-shadow var(--dur-2);position:relative}
+.rail-btn:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.rail-btn.active{background:var(--mint);color:#06231a;box-shadow:var(--glow-mint)}
+.rail-sep{width:26px;height:1px;background:rgba(255,255,255,.09);margin:6px 0}
+.proj-av{width:34px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-radius:8px;padding:2px}
+.proj-av .av{width:30px;height:30px;border-radius:9px;border:2px solid transparent;
+  transition:border-color var(--dur-2),transform var(--dur-2) var(--ease-spring),box-shadow var(--dur-2);
+  position:relative;overflow:hidden;display:grid;place-items:center;isolation:isolate}
+.proj-av:hover .av{transform:scale(1.1)}
+.proj-av.active .av{border-color:var(--mint);box-shadow:0 0 12px rgba(60,232,166,.35)}
+.proj-av span{font-size:7.5px;line-height:1.15;color:var(--text-3);text-align:center;max-width:44px}
+/* live procedural avatar — replaces the local screen-recording video */
+.av-live{position:absolute;inset:-40%;z-index:-1;border-radius:50%;
+  background:conic-gradient(from 0deg,#0d4034,#3ce8a6 18%,#0f5c44 36%,#102c22 52%,#2fae84 70%,#0d4034);
+  filter:blur(5px) saturate(1.2);opacity:0;transition:opacity .4s}
+.proj-av.active .av-live{opacity:.95;animation:avSpin 7s linear infinite}
+.av-n{background:radial-gradient(circle at 30% 30%,#0f3328,#071611);display:grid;place-items:center;color:var(--mint);font-weight:600;font-size:13px;border-radius:50% !important}
+.av-1{background:linear-gradient(135deg,#3f7d57,#16352a)}
+.av-2{background:linear-gradient(135deg,#b9a06a,#4d3f23)}
+.rail .spacer{flex:1}
+.bell{position:relative}
+.bell::after{content:"";position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--mint);
+  animation:pulseSoft 2.6s ease-in-out infinite}
+.me{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--stroke-2);display:grid;place-items:center;
+  font-size:11px;font-weight:600;color:var(--text-2);transition:border-color var(--dur-1),color var(--dur-1)}
+.me:hover{border-color:var(--mint);color:var(--mint)}
+
+/* ---- stage scaffold ---- */
+.stage{position:relative;flex:1;overflow:hidden;--split:55%;background:var(--bg)}
