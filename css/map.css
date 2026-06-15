@@ -43,7 +43,9 @@
 #stageMap .maplibregl-popup.story-oct-popup .maplibregl-popup-tip{
   border-top-color:rgba(8,14,12,.92);
 }
-.story-oct-tip{padding:10px 11px 9px;min-width:150px}
+.story-oct-tip{padding:10px 11px 9px;min-width:160px}
+.oct-tip-photo{display:block;width:100%;height:88px;object-fit:cover;border-radius:7px;margin-bottom:8px;
+  border:1px solid rgba(255,255,255,.08);background:#0a1a14}
 .story-oct-tip b{display:block;font-size:11px;line-height:1.2;color:var(--text);margin-bottom:2px}
 .story-oct-tip span{display:block;font-size:9.5px;line-height:1.3;color:var(--text-3)}
 .story-oct-tip hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:7px 0 6px}
@@ -52,9 +54,7 @@
 .story-oct-tip em{font-style:normal;color:var(--text);font-weight:600}
 .story-oct-tip small{display:block;margin-top:3px;color:var(--text-3);font-size:9px}
 
-.sea{position:absolute;inset:0;z-index:1;opacity:.14;pointer-events:none;transition:opacity .4s;animation:seaDrift 18s ease-in-out infinite alternate}
-.sea svg{width:100%;height:100%;display:block}
-.stage.basemap-off .sea{opacity:.04}
+
 
 /* ambient light pools — slow drifting colour mass behind the glass */
 .ambient{position:absolute;width:46vw;height:46vw;border-radius:50%;pointer-events:none;z-index:2;

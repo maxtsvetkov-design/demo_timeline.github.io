@@ -1,7 +1,148 @@
 /* ════ FILE: css/story.css — story panel & widgets ════ */
 .story-panel{position:absolute;top:10px;right:10px;bottom:10px;width:var(--story-w);z-index:50;display:flex;flex-direction:column;gap:10px;
-  transition:transform .45s var(--ease-smooth),opacity .35s,width .35s}
+  transform-origin:right center;
+  transition:transform .62s cubic-bezier(.22,.7,.16,1),opacity .4s,width .55s cubic-bezier(.22,.7,.16,1),top .55s cubic-bezier(.22,.7,.16,1),right .55s cubic-bezier(.22,.7,.16,1),bottom .55s cubic-bezier(.22,.7,.16,1),border-radius .45s,background-color .45s,box-shadow .55s}
 .story-panel.hidden{transform:translateX(110%);opacity:0;pointer-events:none}
+.story-panel.tab-switching-out{
+  transform:translateX(42px) scale(.987);
+  opacity:0;
+  filter:blur(5px);
+  pointer-events:none;
+}
+.story-panel.tab-switching-in{
+  transform:translateX(34px) scale(.992);
+  opacity:0;
+  filter:blur(4px);
+}
+.story-panel.fullscreen{top:0;right:0;bottom:0;left:auto;width:100vw !important;gap:0;border-radius:0;
+  background:linear-gradient(180deg,rgba(10,18,15,.985),rgba(8,14,12,.985));z-index:200;
+  box-shadow:0 40px 120px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.03)}
+.story-fullscreen-active .fs-hideable{
+  transition:opacity .42s ease,transform .55s cubic-bezier(.22,.7,.16,1),filter .42s ease;
+  will-change:opacity,transform,filter;
+}
+.story-fullscreen-active .fs-hideable.fs-hidden{
+  opacity:0;
+  transform:translateY(10px) scale(.985);
+  filter:blur(4px);
+  pointer-events:none;
+}
+.story-panel.fullscreen .sp-head{
+  border-radius:0;
+  max-width:none;
+  width:100%;
+  margin:0;
+  padding:18px 28px 14px;
+  box-sizing:border-box;
+}
+.story-panel.fullscreen .sp-scroll{
+  border-radius:0;
+  display:block;
+  padding:0 24px 24px;
+}
+.story-panel.fullscreen .sp-section.glass{
+  border-radius:22px !important;
+  width:min(1680px,100%);
+  max-width:none;
+  margin:0 auto;
+  padding:24px;
+  box-sizing:border-box;
+  display:grid;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:16px;
+  transition:width .6s cubic-bezier(.22,.7,.16,1),padding .45s ease,border-radius .45s ease,box-shadow .55s ease,background-color .45s ease;
+}
+.story-panel.fullscreen .sp-section > *{grid-column:span 6;min-width:0}
+.story-panel.fullscreen .sp-head,
+.story-panel.fullscreen .sp-scroll,
+.story-panel.fullscreen .sp-section > *{
+  transition:opacity .48s ease,transform .72s cubic-bezier(.2,.75,.18,1),filter .6s ease,box-shadow .4s ease;
+  transform-origin:top center;
+}
+.story-panel.fullscreen.fs-entering .sp-head{
+  opacity:0;
+  transform:translateY(-14px) scale(.992);
+  filter:blur(6px);
+}
+.story-panel.fullscreen.fs-entering .sp-scroll{
+  opacity:0;
+  transform:translateY(12px);
+  filter:blur(8px);
+}
+.story-panel.fullscreen.fs-entering .sp-section > *{
+  opacity:0;
+  transform:translateY(22px) scale(.985);
+  filter:blur(8px);
+}
+.story-panel.fullscreen .sp-section > :nth-child(1){transition-delay:.02s}
+.story-panel.fullscreen .sp-section > :nth-child(2){transition-delay:.05s}
+.story-panel.fullscreen .sp-section > :nth-child(3){transition-delay:.08s}
+.story-panel.fullscreen .sp-section > :nth-child(4){transition-delay:.11s}
+.story-panel.fullscreen .sp-section > :nth-child(5){transition-delay:.14s}
+.story-panel.fullscreen .sp-section > :nth-child(6){transition-delay:.17s}
+.story-panel.fullscreen .sp-section > :nth-child(7){transition-delay:.20s}
+.story-panel.fullscreen .sp-section > :nth-child(8){transition-delay:.23s}
+.story-panel.fullscreen .sp-section > :nth-child(9){transition-delay:.26s}
+.story-panel.fullscreen .sp-section > :nth-child(10){transition-delay:.29s}
+.story-panel.fullscreen .sp-section > :nth-child(11){transition-delay:.32s}
+.story-panel.fullscreen .sp-section > :nth-child(12){transition-delay:.35s}
+.story-panel.fullscreen.fs-settled .wcard:hover{transform:translateY(-3px) scale(1.004)}
+.story-panel.fullscreen #slideWrap,
+.story-panel.fullscreen .lw-meta,
+.story-panel.fullscreen [data-label="Survival flow"],
+.story-panel.fullscreen [data-label="Biomass"],
+.story-panel.fullscreen [data-label="DEM compare"],
+.story-panel.fullscreen .duo{grid-column:1 / -1}
+.story-panel.fullscreen .wcard,
+.story-panel.fullscreen .duo .wcard{margin-bottom:0;height:100%}
+/* in fullscreen: charts grow taller and use the added width */
+.story-panel.fullscreen .chart-wrap{height:360px}
+.story-panel.fullscreen #biomassChart{height:360px !important}
+.story-panel.fullscreen #impactChart,
+.story-panel.fullscreen #sankeyChart,
+.story-panel.fullscreen #areaChart,
+.story-panel.fullscreen #bubbleChart{height:260px !important}
+.story-panel.fullscreen #radarChart{width:100% !important;height:260px !important}
+.story-panel.fullscreen .duo{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.story-panel.fullscreen .stat-row{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.story-panel.fullscreen .cmp{height:380px}
+.story-panel.fullscreen .legend{grid-template-columns:repeat(2,minmax(0,1fr))}
+.story-panel.fullscreen .slide-title{font-size:34px;max-width:18ch}
+.story-panel.fullscreen .slide-body{font-size:14px;max-width:70ch}
+.story-panel.fullscreen .lw-grid,
+.story-panel.fullscreen .lw-fauna-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+
+@media (max-width: 1280px){
+  .story-panel.fullscreen .sp-head{padding:16px 18px 12px}
+  .story-panel.fullscreen .sp-scroll{padding:0 16px 16px}
+  .story-panel.fullscreen .sp-section.glass{padding:18px;grid-template-columns:repeat(8,minmax(0,1fr))}
+  .story-panel.fullscreen .sp-section > *{grid-column:span 4}
+  .story-panel.fullscreen #slideWrap,
+  .story-panel.fullscreen .lw-meta,
+  .story-panel.fullscreen [data-label="Survival flow"],
+  .story-panel.fullscreen [data-label="Biomass"],
+  .story-panel.fullscreen [data-label="DEM compare"],
+  .story-panel.fullscreen .duo{grid-column:1 / -1}
+}
+
+@media (max-width: 920px){
+  .story-panel.fullscreen .sp-section.glass{grid-template-columns:1fr;padding:14px}
+  .story-panel.fullscreen .sp-section > *{grid-column:1 / -1}
+  .story-panel.fullscreen .duo,
+  .story-panel.fullscreen .lw-grid,
+  .story-panel.fullscreen .lw-fauna-grid,
+  .story-panel.fullscreen .legend,
+  .story-panel.fullscreen .stat-row{grid-template-columns:1fr}
+  .story-panel.fullscreen .chart-wrap,
+  .story-panel.fullscreen #biomassChart,
+  .story-panel.fullscreen #impactChart,
+  .story-panel.fullscreen #sankeyChart,
+  .story-panel.fullscreen #areaChart,
+  .story-panel.fullscreen #bubbleChart,
+  .story-panel.fullscreen #radarChart{height:220px !important}
+  .story-panel.fullscreen .cmp{height:260px}
+  .story-panel.fullscreen .slide-title{font-size:28px}
+}
 .sp-head{padding:14px 16px 12px;flex:0 0 auto}
 .sp-toprow{display:flex;align-items:center;gap:8px}
 .coords{display:flex;align-items:center;gap:7px;background:var(--chip);border:1px solid var(--stroke);
@@ -17,6 +158,39 @@
 .sp-title{font-family:var(--font-display);font-weight:600;font-size:23px;line-height:1.3;margin:16px 0 14px;letter-spacing:-.01em}
 .dots{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .dots-nav{display:flex;align-items:center;gap:5px;min-width:0;flex:1}
+.tour-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px 5px 9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  color:var(--text-2);
+  font-size:11.5px;font-weight:500;
+  transition:var(--dur-1);
+  flex-shrink:0;
+  white-space:nowrap;
+}
+.tour-btn:hover{
+  color:var(--text);
+  border-color:rgba(60,232,166,.30);
+  background:rgba(60,232,166,.08);
+}
+.tour-btn.touring{
+  background:var(--mint);
+  color:#06231a;
+  border-color:var(--mint);
+  box-shadow:var(--glow-mint);
+}
+/* progress ring behind tour button when active */
+.tour-btn.touring::before{
+  content:'';
+  position:absolute;
+  inset:-3px;
+  border-radius:999px;
+  background:conic-gradient(rgba(60,232,166,.5) var(--tour-progress,0%),transparent 0%);
+  z-index:-1;
+  transition:none;
+}
 .dot{width:14px;height:4px;border-radius:99px;background:rgba(255,255,255,.18);transition:var(--dur-2);padding:0}
 .dot:hover{background:rgba(255,255,255,.4)}
 .dot.active{background:var(--mint);width:22px;box-shadow:0 0 8px rgba(60,232,166,.6)}
@@ -48,7 +222,7 @@
 .dots-play-main:hover{background:linear-gradient(180deg,rgba(60,232,166,.26),rgba(60,232,166,.14));box-shadow:var(--glow-mint)}
 .dots-play-main.playing{background:var(--mint);color:#06231a;border-color:var(--mint);box-shadow:var(--glow-mint)}
 .sp-scroll{flex:1;overflow-y:auto;border-radius:var(--r-lg);scrollbar-gutter:stable}
-.sp-section{padding:18px 16px 16px;position:relative}
+.sp-section{padding:18px 16px 24px;position:relative}
 .slide-title{font-family:var(--font-display);font-weight:600;font-size:25px;line-height:1.25;letter-spacing:-.01em;max-width:88%;margin-bottom:13px}
 .slide-title .hl{color:var(--mint);font-weight:600;animation:titleGlow 4s ease-in-out infinite}
 .slide-body{color:var(--text-2);font-size:13px;line-height:1.62;margin-bottom:15px}
@@ -117,7 +291,7 @@
 .legend p b{color:var(--text)}
 .legend .key{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .key.blue{background:#3d6cd8}.key.green{background:#37c98c}
-/* ── Liwa data sections ─────────────────────────────────────────── */
+/* ── Al Mirfa data sections ─────────────────────────────────────────── */
 
 /* area metadata card */
 .lw-name-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
@@ -169,6 +343,80 @@
 }
 .lw-fauna-name{font-size:11px;font-weight:500;color:var(--text-2);line-height:1.35;margin-bottom:2px}
 .lw-fauna-rate{font-size:10px;font-family:var(--font-mono);color:var(--text-3)}
+
+/* ── AOI identity row ── */
+.aoi-id-row{display:flex;align-items:center;gap:7px;padding:7px 0 9px;border-bottom:1px solid var(--stroke);margin-bottom:8px;flex-wrap:wrap}
+.aoi-id-chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;color:var(--text-3);background:var(--chip);border:1px solid var(--stroke);border-radius:99px;padding:3px 10px}
+.aoi-id-chip strong{color:var(--text);font-weight:600}
+.aoi-act-btn{padding:4px 10px;border-radius:8px;font-size:11.5px;font-weight:500;color:var(--text-2);border:1px solid var(--stroke-2);background:rgba(255,255,255,.04);transition:var(--dur-1);cursor:pointer}
+.aoi-act-btn:hover{color:var(--text);border-color:rgba(60,232,166,.3);background:rgba(60,232,166,.06)}
+.aoi-act-save{background:rgba(60,232,166,.08);color:var(--mint);border-color:rgba(60,232,166,.22)}
+.aoi-act-save:hover{background:rgba(60,232,166,.14);box-shadow:var(--glow-mint)}
+
+/* ── Area overview grid ── */
+.ao-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}
+.ao-item{background:rgba(255,255,255,.035);border:1px solid var(--stroke);border-radius:10px;padding:9px 11px;transition:border-color var(--dur-2)}
+.ao-item:hover{border-color:rgba(60,232,166,.18)}
+.ao-item em{display:block;font-style:normal;font-size:10px;color:var(--text-3);margin-bottom:4px}
+.ao-item b{font-size:13px;font-weight:600;font-family:var(--font-mono);color:var(--text)}
+.ao-wide{grid-column:1/-1}
+.ao-val-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ao-unit,.ao-sub{font-size:11px;font-weight:400;color:var(--text-3)}
+.ao-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.ao-protected{background:rgba(60,232,166,.1);color:var(--mint);border:1px solid rgba(60,232,166,.24)}
+.ao-chips{display:flex;gap:4px}
+.ao-chip{padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:500;background:rgba(255,255,255,.07);color:var(--text-2)}
+.ao-chip.mint{background:rgba(60,232,166,.12);color:var(--mint)}
+.ao-delta{font-size:10.5px;font-weight:500}
+.ao-delta.neg{color:#ff8c5a}
+.ao-delta.pos{color:var(--mint)}
+
+/* ── Section group headers ── */
+.sp-group-hd{display:flex;align-items:center;gap:7px;padding:13px 0 6px;font-size:10.5px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text-3)}
+.sp-group-hd .icon{color:var(--mint);opacity:.7}
+
+/* ── Metric rows ── */
+.mrows{display:flex;flex-direction:column}
+.mrow{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.mrow:last-child{border-bottom:none}
+.mrow-lbl{font-size:11.5px;color:var(--text-2)}
+.mrow-val{font-size:12px;font-weight:600;font-family:var(--font-mono);color:var(--text);text-align:right}
+.mrow-sub{font-size:10px;color:var(--text-3);display:block;margin-top:2px}
+.mrow-unit{font-size:10px;font-weight:400;color:var(--text-3)}
+.mrow-tag{padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.mrow-high{background:rgba(255,140,90,.12);color:#ff8c5a;border:1px solid rgba(255,140,90,.2)}
+
+/* ── NDVI toggles ── */
+.ndvi-toggles{display:flex;gap:5px;margin:9px 0 8px;flex-wrap:wrap}
+.ndvi-toggle{padding:4px 11px;border-radius:99px;font-size:11px;font-weight:500;cursor:pointer;transition:var(--dur-1);background:rgba(255,255,255,.04);border:1px solid var(--stroke-2);color:var(--text-3)}
+.ndvi-toggle.on{background:var(--ndvi-clr,rgba(60,232,166,.3));border-color:var(--ndvi-clr,rgba(60,232,166,.45));color:var(--text)}
+.ndvi-toggle:not(.on):hover{color:var(--text-2);opacity:.85}
+
+/* ── NDVI stats ── */
+.ndvi-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.ndvi-stat{background:rgba(255,255,255,.04);border:1px solid var(--stroke);border-radius:9px;padding:7px 10px}
+.ndvi-stat em{font-style:normal;font-size:10px;color:var(--text-3);display:block;margin-bottom:3px}
+.ndvi-stat b{font-size:15px;font-weight:700;font-family:var(--font-mono);color:var(--text);display:block}
+
+/* ── NDVI distribution header ── */
+.ndvi-dist-hd{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--text-2);margin:14px 0 0}
+.ndvi-dist-hd span{font-size:10px;font-weight:400;color:var(--text-3)}
+
+/* ── Biodiversity ── */
+.bio-species-row{display:flex;align-items:center;gap:14px;padding:12px 0 6px}
+.bio-big{font-size:48px;font-weight:700;font-family:var(--font-mono);color:var(--mint);line-height:1}
+.bio-lbl{font-size:13px;font-weight:600;color:var(--text)}
+.bio-sub{font-size:11px;color:var(--text-3);margin-top:3px;font-family:var(--font-mono)}
+
+/* ── Carbon grid ── */
+.carbon-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}
+.carbon-item{background:rgba(255,255,255,.035);border:1px solid var(--stroke);border-radius:10px;padding:10px 12px;transition:border-color var(--dur-2)}
+.carbon-item:hover{border-color:rgba(60,232,166,.2)}
+.carbon-item em{display:block;font-style:normal;font-size:10px;color:var(--text-3);margin-bottom:5px}
+.carbon-item b{font-size:16px;font-weight:700;font-family:var(--font-mono);color:var(--text);display:flex;align-items:baseline;gap:4px}
+.carbon-wide{grid-column:1/-1}
+.carbon-unit{font-size:11px;font-weight:400;color:var(--text-3)}
+.c-tier{font-size:9.5px;font-weight:500;padding:1px 7px;border-radius:5px;background:rgba(255,255,255,.07);color:var(--text-3);margin-left:6px}
 
 /* entrance animation — scoped to lw-* cards only */
 .lw-meta,.lw-classif,.lw-fauna,.wcard.lw-enter{opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}

@@ -1,9 +1,4 @@
 /* ════ FILE: css/animations.css — shared keyframe library ════ */
-@keyframes seaDrift{
-  0%{transform:translate3d(0,0,0) scale(1);opacity:.28}
-  50%{transform:translate3d(-1.2%,.6%,0) scale(1.018);opacity:.34}
-  100%{transform:translate3d(1%,-.5%,0) scale(1.01);opacity:.3}
-}
 @keyframes hazeFloat{
   0%{transform:translate3d(0,0,0);opacity:.82}
   50%{transform:translate3d(.8%,1.2%,0);opacity:.68}

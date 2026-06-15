@@ -4,7 +4,15 @@
   background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
   border:1px solid rgba(255,255,255,.06);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 6px 14px rgba(0,0,0,.24);
-  transition:transform .22s var(--ease-out),box-shadow .22s var(--ease-out),border-color .22s var(--ease-out),background .22s var(--ease-out),opacity .2s var(--ease-out);
+  /* Single unified transition — all animated properties in one place so
+     every state change (scroll-hidden, story-dim, story-focus) animates correctly */
+  transition:
+    opacity .3s var(--ease-out),
+    transform .3s var(--ease-out),
+    filter .3s var(--ease-out),
+    background .26s var(--ease-out),
+    box-shadow .26s var(--ease-out),
+    border-color .26s var(--ease-out);
 }
 .layer-row:hover{
   transform:translateY(-1px);
@@ -97,6 +105,39 @@
   opacity:.18 !important;
   filter:grayscale(.8);
 }
+
+/* ── layer row context menu ── */
+.row-ctx{
+  position:fixed;
+  z-index:400;
+  width:188px;
+  padding:5px 0 5px;
+  border-radius:11px;
+  background:rgba(6,13,11,.96);
+  border:1px solid rgba(255,255,255,.09);
+  box-shadow:0 20px 36px rgba(0,0,0,.58),0 0 0 1px rgba(60,232,166,.06),inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter:blur(16px);
+  display:none;
+  flex-direction:column;
+  transform-origin:top left;
+  animation:rowCtxIn .16s var(--ease-spring);
+}
+.row-ctx.open{display:flex;}
+@keyframes rowCtxIn{from{opacity:0;transform:scale(.92) translateY(-4px)}to{opacity:1;transform:none}}
+.row-ctx-item{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 13px;font-size:12px;color:var(--text-2);
+  cursor:pointer;border:0;background:transparent;width:100%;text-align:left;
+  transition:background .12s,color .12s;white-space:nowrap;
+}
+.row-ctx-item:hover,.row-ctx-item:focus-visible{background:rgba(255,255,255,.06);color:var(--text-1);outline:none;}
+.row-ctx-item svg{flex-shrink:0;color:var(--text-3);transition:color .12s;}
+.row-ctx-item:hover svg,.row-ctx-item:focus-visible svg{color:var(--mint);}
+.row-ctx-item.danger{color:rgba(255,110,90,.85);}
+.row-ctx-item.danger:hover,.row-ctx-item.danger:focus-visible{background:rgba(255,80,60,.07);color:#ff7060;}
+.row-ctx-item.danger svg{color:rgba(255,110,90,.6);}
+.row-ctx-item.danger:hover svg{color:#ff7060;}
+.row-ctx-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0;}
 
 /* ── lm-panel visual skin ── */
 .lm-panel{
@@ -215,4 +256,46 @@
   font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
   color:rgba(60,232,166,.6);background:rgba(60,232,166,.08);
   border:1px solid rgba(60,232,166,.15);padding:1px 5px;border-radius:4px;flex-shrink:0;
+}
+
+/* ── scroll-based layer reveal ── */
+.layer-row.scroll-hidden{
+  /* No transition override — base .layer-row transition handles everything */
+  opacity:.2;
+  transform:scale(.94);
+  filter:grayscale(.55) brightness(.72);
+  pointer-events:none;
+}
+
+/* ── story states: dim non-active, highlight active ── */
+.layer-row.story-dim{
+  opacity:.16;
+  transform:scale(.97);
+  filter:grayscale(.55) brightness(.62);
+  pointer-events:none;
+}
+.layer-row.story-focus{
+  border-color:rgba(60,232,166,.5) !important;
+  background:linear-gradient(160deg,rgba(60,232,166,.12),rgba(60,232,166,.04)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    0 0 0 1px rgba(60,232,166,.22),
+    0 8px 28px rgba(0,0,0,.4),
+    0 0 20px rgba(60,232,166,.16) !important;
+}
+
+/* ── story row entry / exit animations ── */
+@keyframes rowIn{
+  from{opacity:0;transform:translateX(-12px) scale(.96)}
+  to  {opacity:1;transform:none}
+}
+@keyframes rowOut{
+  to{opacity:0;transform:translateX(10px) scale(.96)}
+}
+.layer-row.story-row-in{
+  animation:rowIn .34s var(--ease-spring) both;
+}
+.layer-row.story-row-out{
+  animation:rowOut .24s var(--ease-out) forwards;
+  pointer-events:none;
 }

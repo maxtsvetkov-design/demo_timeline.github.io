@@ -168,7 +168,9 @@
 /* ---- minimap ---- */
 .minimap{position:absolute;right:calc(var(--story-w) + 24px);bottom:170px;width:118px;height:96px;border-radius:18px;overflow:hidden;
   border:1px solid var(--stroke);box-shadow:var(--shadow);cursor:pointer;z-index:38;
-  transition:border-color var(--dur-2),right .45s var(--ease-smooth),box-shadow var(--dur-2)}
+  transition:border-color var(--dur-2),right .45s var(--ease-smooth),box-shadow var(--dur-2),opacity .3s ease,transform .45s var(--ease-smooth),filter .3s ease}
+.minimap.tab-shifting-out{opacity:0;transform:translateY(12px) scale(.986);filter:blur(4px);pointer-events:none}
+.minimap.tab-shifting-in{opacity:0;transform:translateY(-10px) scale(.992);filter:blur(3px);pointer-events:none}
 .minimap:hover{border-color:var(--mint);box-shadow:var(--shadow),var(--glow-mint)}
 .minimap svg{width:100%;height:100%;display:block}
 .minimap .mm-scan{animation:trackShimmer 4.5s linear infinite}
